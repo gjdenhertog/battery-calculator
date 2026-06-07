@@ -12,7 +12,7 @@ A vertical-but-deliberately-horizontal build of an NL home battery sizing tool. 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green
+- [x] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green (completed 2026-06-07)
 - [ ] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing
 - [ ] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support
 - [ ] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns
@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Vite+TS scaffold, toolchain, build-only CSP plugin, design tokens, 3-region shell
 - [x] 01-02-PLAN.md — Contract-locking Vitest suite (CSP directives + shell DOM + verbatim privacy promise)
-- [ ] 01-03-PLAN.md — GitHub Actions CI + privacy guard + Pages deploy + README; live-deploy human verify
+- [x] 01-03-PLAN.md — GitHub Actions CI + privacy guard + Pages deploy + README; live-deploy human verify
 
 
 ### Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup, Deploy Plumbing, Privacy Rules | 2/3 | In Progress|  |
+| 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 0/TBD | Not started | - |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
