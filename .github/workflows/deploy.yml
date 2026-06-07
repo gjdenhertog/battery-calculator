@@ -1,0 +1,88 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm run lint
+
+      - run: npm run format:check
+
+      - run: npm test
+
+      - name: Privacy guard — scan dist/ for external URLs (D-04)
+        run: |
+          FOUND=$(grep -rE \
+            --include='*.html' \
+            --include='*.js' \
+            --include='*.css' \
+            'https?://[a-zA-Z0-9]' \
+            dist/ \
+            | grep -v '\.map' \
+            | grep -v '//# sourceMappingURL' \
+            || true)
+          if [ -n "$FOUND" ]; then
+            echo "PRIVACY GUARD FAILED: external URL(s) found in built output"
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "Privacy guard: PASS — no external URLs in dist/"
+
+      - name: No error-reporting library check (PRIV-03)
+        run: |
+          if grep -Ei 'sentry|rollbar|bugsnag' package.json package-lock.json 2>/dev/null; then
+            echo "PRIV-03 FAILED: error-reporting library found in dependencies"
+            exit 1
+          fi
+          echo "PRIV-03: PASS — no sentry/rollbar/bugsnag in package.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
