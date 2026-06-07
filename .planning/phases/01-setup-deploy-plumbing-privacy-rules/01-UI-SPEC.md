@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: setup-deploy-plumbing-privacy-rules
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-07
+reviewed_at: 2026-06-07
 ---
 
 # Phase 1 — UI Design Contract
