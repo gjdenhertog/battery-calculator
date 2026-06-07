@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-06-07T19:52:58.761Z"
-last_activity: 2026-06-07 -- Phase 01 planning complete
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-06-07T20:03:30.408Z"
+last_activity: 2026-06-07
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** The user uploads their own real CSV data and gets back a clear, honest comparison of which battery size makes sense for their house — without sending any data anywhere.
-**Current focus:** Phase 1 — Setup, Deploy Plumbing, Privacy Rules
+**Current focus:** Phase 01 — setup-deploy-plumbing-privacy-rules
 
 ## Current Position
 
-Phase: 1 of 5 (Setup, Deploy Plumbing, Privacy Rules)
-Plan: 0 of TBD in current phase
+Phase: 01 (setup-deploy-plumbing-privacy-rules) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-06-07 -- Phase 01 planning complete
+Last activity: 2026-06-07
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01 P01 | 267 | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - Roadmap: Workers introduced in Phase 4 as Comlink adapters around the same pure functions, not as Phase 1 plumbing
 - Roadmap: Saldering on/off rendered as side-by-side columns per battery (not a re-run toggle)
 - Roadmap: Headline metric is "kWh grid import avoided", not "self-consumption %"
+- [Phase ?]: CSP injected via build-only Vite plugin (apply:'build') — source index.html stays CSP-free so HMR works
+- [Phase ?]: Shell content in both index.html (static delivery) and shell.ts (jsdom testability) with double-render guard in main.ts
+- [Phase ?]: TypeScript pinned to ~5.6 (5.6.3 installed) against npm latest 6.0.3 per CLAUDE.md lock
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-07T19:13:44.576Z
-Stopped at: Phase 1 UI-SPEC approved
-Resume file: .planning/phases/01-setup-deploy-plumbing-privacy-rules/01-UI-SPEC.md
+Last session: 2026-06-07T20:03:30.400Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None

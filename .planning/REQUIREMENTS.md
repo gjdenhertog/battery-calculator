@@ -9,16 +9,16 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Setup (SETUP)
 
-- [ ] **SETUP-01**: Vite + TypeScript project scaffold builds to static output suitable for GitHub Pages (`base: '/battery-calculator/'`)
+- [x] **SETUP-01**: Vite + TypeScript project scaffold builds to static output suitable for GitHub Pages (`base: '/battery-calculator/'`)
 - [ ] **SETUP-02**: A "hello world" page is reachable at `https://<user>.github.io/battery-calculator/` via GitHub Actions deploy (`actions/checkout@v6` + `setup-node@v6` + `configure-pages@v6` + `upload-pages-artifact@v5` + `deploy-pages@v5`)
 - [ ] **SETUP-03**: CI runs lint, formatter check, and Vitest on every push; deploy only runs after CI is green on the main branch
 - [ ] **SETUP-04**: No third-party scripts ship in the bundle (no analytics, no Sentry, no Google Fonts, no CDN-loaded libraries) — verified by a CI grep / Network-tab inspection note in the README
-- [ ] **SETUP-05**: A CSP `<meta http-equiv>` tag in `index.html` restricts script/style/connect sources to `'self'` (GitHub Pages cannot set HTTP headers)
+- [x] **SETUP-05**: A CSP `<meta http-equiv>` tag in `index.html` restricts script/style/connect sources to `'self'` (GitHub Pages cannot set HTTP headers)
 
 ### Privacy (PRIV)
 
-- [ ] **PRIV-01**: Uploaded CSV files are read and processed entirely in the browser; no network request includes user data
-- [ ] **PRIV-02**: The privacy promise ("Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden") is visible *at the drop zone*, not buried in a footer
+- [x] **PRIV-01**: Uploaded CSV files are read and processed entirely in the browser; no network request includes user data
+- [x] **PRIV-02**: The privacy promise ("Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden") is visible *at the drop zone*, not buried in a footer
 - [ ] **PRIV-03**: Parse errors are shown to the user but never sent off-device (no error-reporting library)
 
 ### Data Ingestion (DATA)
@@ -153,13 +153,13 @@ Each v1 requirement maps to exactly one phase. No orphans, no duplicates.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SETUP-01 | Phase 1 | Pending |
+| SETUP-01 | Phase 1 | Complete |
 | SETUP-02 | Phase 1 | Pending |
 | SETUP-03 | Phase 1 | Pending |
 | SETUP-04 | Phase 1 | Pending |
-| SETUP-05 | Phase 1 | Pending |
-| PRIV-01 | Phase 1 | Pending |
-| PRIV-02 | Phase 1 | Pending |
+| SETUP-05 | Phase 1 | Complete |
+| PRIV-01 | Phase 1 | Complete |
+| PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Pending |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
