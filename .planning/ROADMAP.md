@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Privacy promise copy ("Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden") is rendered on the page in a location where the future drop zone will sit — not in a footer.
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Vite+TS scaffold, toolchain, build-only CSP plugin, design tokens, 3-region shell
-- [ ] 01-02-PLAN.md — Contract-locking Vitest suite (CSP directives + shell DOM + verbatim privacy promise)
+- [x] 01-02-PLAN.md — Contract-locking Vitest suite (CSP directives + shell DOM + verbatim privacy promise)
 - [ ] 01-03-PLAN.md — GitHub Actions CI + privacy guard + Pages deploy + README; live-deploy human verify
 
 
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup, Deploy Plumbing, Privacy Rules | 1/3 | In Progress|  |
+| 1. Setup, Deploy Plumbing, Privacy Rules | 2/3 | In Progress|  |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 0/TBD | Not started | - |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |

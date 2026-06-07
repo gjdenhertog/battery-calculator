@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-06-07T20:03:30.408Z"
+last_updated: "2026-06-07T20:07:55.964Z"
 last_activity: 2026-06-07
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 ## Current Position
 
 Phase: 01 (setup-deploy-plumbing-privacy-rules) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-06-07
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 267 | 3 tasks | 16 files |
+| Phase 01 P02 | 158 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase ?]: CSP injected via build-only Vite plugin (apply:'build') — source index.html stays CSP-free so HMR works
 - [Phase ?]: Shell content in both index.html (static delivery) and shell.ts (jsdom testability) with double-render guard in main.ts
 - [Phase ?]: TypeScript pinned to ~5.6 (5.6.3 installed) against npm latest 6.0.3 per CLAUDE.md lock
+- [Phase ?]: CSP test comment pitfall
+- [Phase ?]: Shell test pattern: call source function
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-07T20:03:30.400Z
+Last session: 2026-06-07T20:07:55.956Z
 Stopped at: Completed 01-01-PLAN.md
 Resume file: None
