@@ -30,7 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A CSP `<meta http-equiv>` tag in `index.html` restricts `script-src`/`style-src`/`connect-src` to `'self'`, and the browser reports no CSP violations on load.
   4. Pushing to `main` triggers GitHub Actions that run lint + formatter check + Vitest, and only deploys when CI is green; a deliberately-broken push fails the workflow and does not deploy.
   5. Privacy promise copy ("Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden") is rendered on the page in a location where the future drop zone will sit — not in a footer.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Vite+TS scaffold, toolchain, build-only CSP plugin, design tokens, 3-region shell
+- [ ] 01-02-PLAN.md — Contract-locking Vitest suite (CSP directives + shell DOM + verbatim privacy promise)
+- [ ] 01-03-PLAN.md — GitHub Actions CI + privacy guard + Pages deploy + README; live-deploy human verify
+
 
 ### Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series
 **Goal**: A pure data layer that turns one or more uploaded HomeWizard P1 CSVs into a single canonical, DST-safe `IntervalSample[]` with declared series_type, period filter, and a sanity readout — fixture-locked in CI before any UI exists.
@@ -95,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Setup, Deploy Plumbing, Privacy Rules | 0/TBD | Not started | - |
+| 1. Setup, Deploy Plumbing, Privacy Rules | 0/3 | Planned | - |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 0/TBD | Not started | - |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
