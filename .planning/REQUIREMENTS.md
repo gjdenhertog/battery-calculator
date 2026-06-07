@@ -149,17 +149,75 @@ Explicitly excluded. Documented so they don't get re-proposed mid-build.
 
 ## Traceability
 
-Empty initially — populated during roadmap creation in the next step.
+Each v1 requirement maps to exactly one phase. No orphans, no duplicates.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by gsd-roadmapper) | | |
+| SETUP-01 | Phase 1 | Pending |
+| SETUP-02 | Phase 1 | Pending |
+| SETUP-03 | Phase 1 | Pending |
+| SETUP-04 | Phase 1 | Pending |
+| SETUP-05 | Phase 1 | Pending |
+| PRIV-01 | Phase 1 | Pending |
+| PRIV-02 | Phase 1 | Pending |
+| PRIV-03 | Phase 1 | Pending |
+| DATA-01 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Pending |
+| DATA-04 | Phase 2 | Pending |
+| DATA-05 | Phase 2 | Pending |
+| DATA-06 | Phase 2 | Pending |
+| DATA-07 | Phase 2 | Pending |
+| DATA-08 | Phase 2 | Pending |
+| DATA-09 | Phase 2 | Pending |
+| DATA-10 | Phase 2 | Pending |
+| DATA-11 | Phase 2 | Pending |
+| DATA-12 | Phase 2 | Pending |
+| DATA-13 | Phase 2 | Pending |
+| BATT-01 | Phase 3 | Pending |
+| BATT-02 | Phase 3 | Pending |
+| BATT-03 | Phase 3 | Pending |
+| BATT-04 | Phase 3 | Pending |
+| BATT-05 | Phase 3 | Pending |
+| SIM-01 | Phase 3 | Pending |
+| SIM-02 | Phase 3 | Pending |
+| SIM-03 | Phase 3 | Pending |
+| SIM-04 | Phase 3 | Pending |
+| SIM-05 | Phase 3 | Pending |
+| SIM-06 | Phase 3 | Pending |
+| SIM-07 | Phase 4 | Pending |
+| SIM-08 | Phase 4 | Pending |
+| COMP-01 | Phase 4 | Pending |
+| COMP-02 | Phase 4 | Pending |
+| COMP-03 | Phase 4 | Pending |
+| COMP-04 | Phase 4 | Pending |
+| COMP-05 | Phase 4 | Pending |
+| COMP-06 | Phase 4 | Pending |
+| COMP-07 | Phase 4 | Pending |
+| COMP-08 | Phase 4 | Pending |
+| VIZ-01 | Phase 5 | Pending |
+| VIZ-02 | Phase 5 | Pending |
+| VIZ-03 | Phase 5 | Pending |
+| VIZ-04 | Phase 5 | Pending |
+| UX-01 | Phase 5 | Pending |
+| UX-02 | Phase 5 | Pending |
+| UX-03 | Phase 5 | Pending |
+| UX-04 | Phase 5 | Pending |
+| UX-05 | Phase 5 | Pending |
+| UX-06 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 53 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 53 ⚠️ (expected — will be resolved by roadmap step)
+- v1 requirements: 52 total
+- Mapped to phases: 52 ✓
+- Unmapped: 0
+
+**Per-phase counts:**
+- Phase 1 (Setup, Deploy Plumbing, Privacy Rules): 8 (SETUP-01..05, PRIV-01..03)
+- Phase 2 (CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series): 13 (DATA-01..13)
+- Phase 3 (Battery Simulator and Curated Catalog): 11 (BATT-01..05, SIM-01..06)
+- Phase 4 (Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State): 10 (SIM-07, SIM-08, COMP-01..08)
+- Phase 5 (Visualizations, Polish, Transparent-Assumptions UI): 10 (VIZ-01..04, UX-01..06)
 
 ---
 *Requirements defined: 2026-05-26*
-*Last updated: 2026-05-26 after initial definition*
+*Last updated: 2026-06-07 — traceability populated by gsd-roadmapper*
