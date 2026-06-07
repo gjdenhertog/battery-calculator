@@ -49,7 +49,7 @@ describe('Shell DOM contract', () => {
     const dropZone = document.querySelector('#drop-zone-region')
     expect(dropZone).not.toBeNull()
     expect(dropZone!.textContent).toContain(
-      'Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden',
+      'Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden'
     )
   })
 
@@ -62,8 +62,6 @@ describe('Shell DOM contract', () => {
   it('#results-region is bare — does NOT contain the privacy promise (D-02)', () => {
     const results = document.querySelector('#results-region')
     expect(results).not.toBeNull()
-    expect(results!.textContent?.trim()).not.toContain(
-      'Je data blijft op je eigen apparaat',
-    )
+    expect(results!.textContent?.trim()).not.toContain('Je data blijft op je eigen apparaat')
   })
 })

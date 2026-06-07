@@ -1,0 +1,8 @@
+dist
+node_modules
+coverage
+package-lock.json
+
+# GSD planning artifacts and generated instruction file — not project-owned style
+.planning
+CLAUDE.md
