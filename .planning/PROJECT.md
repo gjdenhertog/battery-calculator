@@ -69,8 +69,8 @@ The user uploads their own real CSV data and gets back a clear, honest compariso
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Fully client-side, GitHub Pages hosting | Simplest deploy, zero infra cost, strongest privacy story | — Pending |
-| Vanilla TypeScript + Vite (no framework) | Minimal deps, fast ship, easy maintenance for a single-purpose tool | — Pending |
+| Fully client-side, GitHub Pages hosting | Simplest deploy, zero infra cost, strongest privacy story | Implemented (Phase 1) — maximal-lockdown CSP (`connect-src 'none'`), CI `dist/` privacy guard, official Pages deploy chain; live-deploy reachability pending human verification |
+| Vanilla TypeScript + Vite (no framework) | Minimal deps, fast ship, easy maintenance for a single-purpose tool | Implemented (Phase 1) — Vite 8 + TS 5.6 scaffold, design-token CSS, 3-region shell, `tsc -b` typecheck + ESLint/Prettier/Vitest in CI |
 | Netherlands-only for v1 | Format detection, battery catalog, and saldering modeling all benefit from a tight regional focus | — Pending |
 | P1-derived solar (no separate solar CSV in v1) | Most NL P1 exports already include feed-in; defers a whole upload/parser pathway | — Pending |
 | Overlap resolution: higher-resolution data wins | P1 (15-min or finer) is more accurate than provider hourly exports; predictable default | — Pending |
@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-25 after initialization*
+*Last updated: 2026-06-07 after Phase 1 (Setup, Deploy Plumbing, Privacy Rules) complete — scaffold, CSP, CI/deploy pipeline shipped; live-deploy reachability pending human verification (01-HUMAN-UAT.md)*
