@@ -9,7 +9,14 @@ import { CSP } from './src/constants/csp'
  * websocket (ws://) and dev-mode style injection unrestricted (Pitfall 3).
  *
  * transformIndexHtml order: 'post' — runs after all other HTML transforms
- * so the tag is injected into the final <head>.
+ * (incl. Vite's own <script>/<link> head injection) so we can position the
+ * CSP meta ahead of them.
+ *
+ * The meta is injected as the FIRST child of <head> (not before </head>) so the
+ * policy governs every resource the parser encounters afterwards — including
+ * Vite's deferred module <script> and the stylesheet <link>. A meta-delivered
+ * CSP only applies to resources parsed after it, so placing it first is required
+ * for the "maximal lockdown" intent to actually hold (WR-02).
  */
 function cspInjectPlugin() {
   return {
@@ -18,8 +25,8 @@ function cspInjectPlugin() {
     transformIndexHtml: {
       order: 'post' as const,
       handler(html: string): string {
-        const metaTag = `  <meta http-equiv="Content-Security-Policy" content="${CSP}">\n`
-        return html.replace('</head>', metaTag + '  </head>')
+        const metaTag = `<meta http-equiv="Content-Security-Policy" content="${CSP}">`
+        return html.replace(/<head>/i, `<head>\n    ${metaTag}`)
       },
     },
   }

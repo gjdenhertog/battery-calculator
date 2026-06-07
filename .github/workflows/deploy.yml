@@ -27,6 +27,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run typecheck
+
       - run: npm run build
 
       - run: npm run lint
@@ -37,21 +39,29 @@ jobs:
 
       - name: Privacy guard — scan dist/ for external URLs (D-04)
         run: |
-          FOUND=$(grep -rE \
+          # Case-insensitive; catches http(s)://, protocol-relative //host,
+          # ws(s):// websockets, and outbound JS APIs (fetch/XHR/sendBeacon).
+          # Widened file set so URLs hidden in json/svg/wasm/webmanifest assets
+          # are not silently skipped (WR-01). Source maps are excluded.
+          FOUND=$(grep -rEi \
             --include='*.html' \
             --include='*.js' \
             --include='*.css' \
-            'https?://[a-zA-Z0-9]' \
+            --include='*.json' \
+            --include='*.svg' \
+            --include='*.wasm' \
+            --include='*.webmanifest' \
+            '(https?:)?//[a-z0-9.-]|wss?://|\bfetch\(|XMLHttpRequest|navigator\.sendBeacon' \
             dist/ \
             | grep -v '\.map' \
             | grep -v '//# sourceMappingURL' \
             || true)
           if [ -n "$FOUND" ]; then
-            echo "PRIVACY GUARD FAILED: external URL(s) found in built output"
+            echo "PRIVACY GUARD FAILED: external URL or outbound-network reference found in built output"
             echo "$FOUND"
             exit 1
           fi
-          echo "Privacy guard: PASS — no external URLs in dist/"
+          echo "Privacy guard: PASS — no external URLs or outbound-network calls in dist/"
 
       - name: No error-reporting library check (PRIV-03)
         run: |
