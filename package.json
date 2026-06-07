@@ -1,0 +1,27 @@
+{
+  "name": "battery-calculator",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "jsdom": "^29.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "~5.6",
+    "typescript-eslint": "^8.0.0",
+    "vite": "^8.0.14",
+    "vitest": "^4.1.7"
+  }
+}
