@@ -29,10 +29,18 @@ findings:
   warning: 5
   info: 4
   total: 10
-status: issues_found
+status: resolved_partial
+resolved_in: bf370b9
 ---
 
 # Phase 1: Code Review Report
+
+> **Resolution (2026-06-07, commit `bf370b9`):** CR-01, WR-01, WR-02, WR-03, WR-04
+> fixed and verified (tsc -b clean + no source-tree pollution; privacy guard now
+> catches protocol-relative/`wss`/uppercase/json·svg·wasm bypasses with real
+> dist/ still clean; CSP `<meta>` injected as first child of `<head>`; `typecheck`
+> wired into CI + build; `**/*.d.ts` ignored in eslint). **Deferred:** WR-05
+> (main.ts coverage) and IN-01..04 — non-blocking, tracked for a later pass.
 
 **Reviewed:** 2026-06-07T20:30:00Z
 **Depth:** standard
