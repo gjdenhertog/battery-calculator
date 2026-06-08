@@ -972,22 +972,25 @@ export async function parseFile(file: File): Promise<ParseFileResult> {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **HomeWizard exact format (CRITICAL)**
    - What we know: Official helpdesk confirms comma-delimited, YYYY-MM-DD HH:MM, dot decimal, cumulative columns named `Import T1 kWh` / `Export T1 kWh`.
    - What's unclear: Does the locale-sensitive export variant use `;` + decimal comma? Does it include a BOM? Does it emit both DST fall-back slots?
    - Recommendation: Plan a task "Obtain and commit a real HomeWizard P1 CSV fixture" as Wave 0 prerequisite. Design the adapter to auto-detect delimiter and normalize decimal comma/point. The CI fixture tests for DATA-08 should be gated on obtaining the real file.
+   - **RESOLVED (plan-phase 2):** Handled defensively rather than blocked — adapter uses `delimiter: ''` (auto-detect) + decimal-comma normalization (covers both variants), and Plan 02-01 Task 4 is a blocking human-verify checkpoint offering "approved" (real owner sample) or "synth-only" (faithfully synthesized cumulative DST fixtures to the documented spec). The suite is never blocked on the real file.
 
 2. **CSP `worker-src blob:` vs Option B custom worker**
    - What we know: PapaParse `worker: true` requires `worker-src blob:`. Option B (Vite `?worker`) avoids CSP relaxation but adds complexity.
    - What's unclear: Project owner's preference on CSP strictness vs simplicity.
    - Recommendation: Plan for Option A (`worker-src blob:`). If the project owner wants to avoid any CSP relaxation, plan Option B instead — flag this as a planning decision checkpoint.
+   - **RESOLVED (plan-phase 2):** Option A adopted per recommendation. Plan 02-01 Task 2 adds `worker-src blob:` (with matching `tests/csp-plugin.test.ts` assertion) and explicitly asserts `connect-src 'none'` stays unchanged. Option B documented in SUMMARY as the fallback if CSP relaxation is later rejected.
 
 3. **DST gap exemption: tzScan vs local-time interval walk**
    - What we know: Both approaches produce correct 92/100 interval counts.
    - What's unclear: Which is simpler to test and explain in the readout.
    - Recommendation: Use local-time interval walk (simpler, self-documenting). Reserve `tzScan` for `detectGaps()` if edge cases require it.
+   - **RESOLVED (plan-phase 2):** Local-time interval walk adopted (Plan 02-03 Task 2 `detectGaps()`), per recommendation.
 
 ---
 
