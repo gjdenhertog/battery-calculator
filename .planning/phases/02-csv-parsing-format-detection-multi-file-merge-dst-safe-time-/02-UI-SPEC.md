@@ -1,10 +1,11 @@
 ---
 phase: 2
 slug: csv-parsing-format-detection-multi-file-merge-dst-safe-time-series
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-08
+reviewed_at: 2026-06-08
 ---
 
 # Phase 2 — UI Design Contract
