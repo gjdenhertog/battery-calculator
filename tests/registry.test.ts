@@ -7,17 +7,27 @@
  *
  * If any test in this file fails it means a future edit broke the parser
  * registry seam — adding a second parser must require zero central-switch edits.
+ *
+ * NOTE: ParserRegistry is a module-level singleton. Tests register additional
+ * parsers but cannot un-register them. Tests are designed to be order-independent
+ * by using header-keyed claim logic (each parser only claims its own unique header).
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ParserRegistry, type CsvParser } from '../src/domain/parsers/registry'
 import type { ParseFileResult } from '../src/domain/types'
 
-// Helper to create a minimal throwaway parser for testing
-function makeParser(name: string, claimResult: boolean): CsvParser {
+/** Unique prefix to avoid cross-test collision in the singleton registry */
+const UNIQUE = '__registry_test__'
+
+/**
+ * Create a parser that claims only when headers contain a specific sentinel header.
+ * Using a unique sentinel per test prevents cross-test pollution in the singleton.
+ */
+function makeSentinelParser(name: string, sentinel: string): CsvParser {
   return {
     name,
-    claim(_headers: string[]): boolean {
-      return claimResult
+    claim(headers: string[]): boolean {
+      return headers.includes(sentinel)
     },
     transform(_rows: Record<string, string>[], _file: File): ParseFileResult {
       throw new Error(`${name}.transform should not be called in this test`)
@@ -26,67 +36,67 @@ function makeParser(name: string, claimResult: boolean): CsvParser {
 }
 
 describe('ParserRegistry', () => {
-  // Reset registry state between tests by re-importing a fresh module.
-  // Since the registry is a module-level singleton, tests that register parsers
-  // must either clean up or use isolated registry instances. We use a fresh
-  // import-side approach: the internal array starts empty per test run.
-  //
-  // NOTE: Because Vitest caches modules, we cannot fully reset the singleton
-  // between tests. Tests are therefore written to be order-independent by
-  // using unique parser names and asserting on the specific returned parser.
-
-  beforeEach(() => {
-    // Re-expose the internal registry state by verifying through public API only.
-    // Tests use unique parser names to avoid cross-test pollution.
-  })
-
   it('returns the first parser whose claim() returns true', () => {
-    const matchingParser = makeParser('matching-first', true)
-    const secondParser = makeParser('matching-second', true)
+    const sentinelA = `${UNIQUE}first-match-a`
+    const sentinelB = `${UNIQUE}first-match-b`
+    const parserFirst = makeSentinelParser('first-match-parser-a', sentinelA)
+    const parserSecond = makeSentinelParser('first-match-parser-b', sentinelA)
 
-    ParserRegistry.register(matchingParser)
-    ParserRegistry.register(secondParser)
+    // Both claim sentinelA; only parserFirst should be registered before parserSecond
+    // We register both and confirm the first one registered is returned
+    const indexBefore = (ParserRegistry as unknown as { _registrySize?: () => number })._registrySize?.() ?? -1
 
-    const result = ParserRegistry.claim(['some-header'])
-    // The first registered matching parser should be returned
-    expect(result).toBe(matchingParser)
+    ParserRegistry.register(parserFirst)
+    ParserRegistry.register(parserSecond)
+
+    const result = ParserRegistry.claim([sentinelA, sentinelB])
+    // first registered parser that matches should be returned
+    expect(result).toBe(parserFirst)
   })
 
   it('does not return a parser whose claim() returns false', () => {
-    const nonMatchingParser = makeParser('non-matching-unique', false)
+    // A parser that only claims a sentinel not present in the query headers
+    const sentinel = `${UNIQUE}false-claim-sentinel`
+    const nonMatchingParser = makeSentinelParser('false-claim-parser', sentinel)
 
     ParserRegistry.register(nonMatchingParser)
 
-    // Register the non-matching parser and check it is not returned when no others match
-    // (We test this by claiming headers that only the noop would encounter)
-    // Since the registry is cumulative, we need a header set that only matches nothing
-    // among parsers with unique non-matching names
-    const result = ParserRegistry.claim(['header-that-matches-nothing-xyz-unique-12345'])
-    // The noop parser always returns false, so it should never be returned
+    // Query with headers that do not include the sentinel — the parser should not match
+    const otherSentinel = `${UNIQUE}other-headers-xyz`
+    const result = ParserRegistry.claim([otherSentinel])
+
+    // Either null or some other parser that was registered earlier for different headers
+    // The key assertion: nonMatchingParser itself must not be returned
     if (result !== null) {
-      expect(result.name).not.toBe('non-matching-unique')
+      expect(result.name).not.toBe('false-claim-parser')
     }
   })
 
   it('returns null when no registered parser matches the headers', () => {
-    // Use a header set so unique no existing parser would claim it
-    const result = ParserRegistry.claim(['__no_parser_matches_this_header_guaranteed__'])
+    // Use a sentinel that no registered parser has claimed
+    const unclaimedHeader = `${UNIQUE}unclaimed-header-guaranteed-unique-xyz-987654`
+    const result = ParserRegistry.claim([unclaimedHeader])
     expect(result).toBeNull()
   })
 
   it('can register a second parser without editing a central switch', () => {
-    // This test proves DATA-03: adding a new parser is just register() — no switch
-    const parserA = makeParser('data03-parser-a', false)
-    const parserB = makeParser('data03-parser-b', true)
+    // DATA-03: adding a new parser is just register() — no switch
+    const sentinelA = `${UNIQUE}data03-parser-a-sentinel`
+    const sentinelB = `${UNIQUE}data03-parser-b-sentinel`
+
+    const parserA = makeSentinelParser('data03-parser-a', sentinelA)
+    const parserB = makeSentinelParser('data03-parser-b', sentinelB)
 
     ParserRegistry.register(parserA)
     ParserRegistry.register(parserB)
 
-    // parserA never claims; parserB always claims
-    // claim() should skip parserA and return parserB (or an earlier true parser)
-    const result = ParserRegistry.claim(['data03-unique-header'])
-    expect(result).not.toBeNull()
-    // The result is some parser that returned true — at minimum parserB qualifies
-    expect(result!.claim(['data03-unique-header'])).toBe(true)
+    // parserA only claims sentinelA; parserB only claims sentinelB
+    const resultA = ParserRegistry.claim([sentinelA])
+    const resultB = ParserRegistry.claim([sentinelB])
+    const resultNeither = ParserRegistry.claim([`${UNIQUE}no-match-data03`])
+
+    expect(resultA).toBe(parserA)
+    expect(resultB).toBe(parserB)
+    expect(resultNeither).toBeNull()
   })
 })
