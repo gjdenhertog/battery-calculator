@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: ready_to_plan
 stopped_at: Phase 01 complete (3/3) — ready to discuss Phase 2
-last_updated: 2026-06-07T20:36:03.362Z
-last_activity: 2026-06-07
+last_updated: 2026-06-08T12:30:00.000Z
+last_activity: 2026-06-08
 progress:
   total_phases: 5
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 Phase: 2
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-06-07
+Last activity: 2026-06-08 - Completed quick task 260608-jx7: Harden Phase 01 GitHub Pages deploy
 
 Progress: [██████████] 100%
 
@@ -85,6 +85,12 @@ None yet.
 
 - Phase 2 needs a real HomeWizard P1 CSV sample during `/gsd:plan-phase` to confirm exact column names and unit conventions; framework can be built without it, but the concrete adapter cannot.
 - Encoding fallback (UTF-8 → Windows-1252) decision deferred to Phase 2 planning.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260608-jx7 | Harden Phase 01 GitHub Pages deploy: add favicon, document required Pages source, bump artifact actions to Node 24 | 2026-06-08 | 9e4b395 | [260608-jx7-harden-phase-01-github-pages-deploy-add-](./quick/260608-jx7-harden-phase-01-github-pages-deploy-add-/) |
 
 ## Deferred Items
 
