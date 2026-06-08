@@ -77,7 +77,16 @@ Voordat de eerste automatische deploy werkt, moet de GitHub Pages-bron ingesteld
 
 **GitHub repo → Settings → Pages → Build and deployment → Source → kies "GitHub Actions"**
 
-Zonder deze instelling mislukt de deploy-job met een rechtenprobleem.
+> **Belangrijk — niet de standaardinstelling.** GitHub Pages staat standaard ingesteld op
+> de "Deploy from a branch"-modus (legacy). Laat je die instelling staan, dan serveert
+> GitHub Pages de ongebouwde repo-root — inclusief de broncode `index.html` die verwijst
+> naar `/src/main.ts` (een 404 op een statische host zonder Vite dev-server om TypeScript
+> te transpileren) en **zonder** de stylesheet die alleen door `vite build` naar `dist/`
+> wordt geschreven. De pagina laadt dan zonder opmaak en met een JavaScript-fout. Het
+> deploy-artifact van de Actions-workflow wordt in die modus stilzwijgend genegeerd.
+>
+> Door Source in te stellen op **"GitHub Actions"** gebruikt GitHub Pages het
+> `dist/`-artifact dat de CI-workflow bouwt en uploadt — precies zoals bedoeld.
 
 ---
 
