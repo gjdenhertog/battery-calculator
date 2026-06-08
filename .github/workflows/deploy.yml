@@ -43,6 +43,12 @@ jobs:
           # ws(s):// websockets, and outbound JS APIs (fetch/XHR/sendBeacon).
           # Widened file set so URLs hidden in json/svg/wasm/webmanifest assets
           # are not silently skipped (WR-01). Source maps are excluded.
+          #
+          # W3C XML namespace declarations (xmlns="http://www.w3.org/..." on
+          # SVG/MathML/XHTML roots) are standardized identifiers the browser
+          # never fetches — not an exfiltration vector. They are STRIPPED (not
+          # line-excluded) before the final detection pass, so a real external
+          # URL sharing a line with an xmlns decl is still caught.
           FOUND=$(grep -rEi \
             --include='*.html' \
             --include='*.js' \
@@ -55,6 +61,8 @@ jobs:
             dist/ \
             | grep -v '\.map' \
             | grep -v '//# sourceMappingURL' \
+            | sed -E 's#xmlns(:[a-zA-Z]+)?="https?://www\.w3\.org/[^"]*"##g' \
+            | grep -Ei '(https?:)?//[a-z0-9.-]|wss?://|\bfetch\(|XMLHttpRequest|navigator\.sendBeacon' \
             || true)
           if [ -n "$FOUND" ]; then
             echo "PRIVACY GUARD FAILED: external URL or outbound-network reference found in built output"
