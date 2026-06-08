@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-setup-deploy-plumbing-privacy-rules
 source: [01-01-SUMMARY.md, 01-02-SUMMARY.md, 01-03-SUMMARY.md]
 started: 2026-06-08T10:01:33Z
-updated: 2026-06-08T10:04:00Z
+updated: 2026-06-08T10:06:00Z
 ---
 
 ## Current Test
@@ -46,7 +46,14 @@ blocked: 0
   reason: "User reported: The pages work, but there doesn't seemto be any styling, I also see two 404 errors (main.ts and favicon.ico)"
   severity: major
   test: 4
-  root_cause: ""     # Filled by diagnosis
-  artifacts: []      # Filled by diagnosis
-  missing: []        # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  root_cause: "GitHub Pages is configured in legacy branch-deploy mode (Pages API: build_type=legacy, source=main:/), so Pages serves the un-built repo root (source index.html referencing /src/main.ts with no CSS link) and ignores the Actions deploy artifact entirely. /src/main.ts 404s on a static host and no stylesheet loads. The build (dist/index.html), vite base path, and deploy.yml are all correct — the artifact is simply never used. Local `npm run preview` works because it serves dist/ directly, masking the mismatch."
+  artifacts:
+    - path: "GitHub repo Settings → Pages (not a file)"
+      issue: "Source set to legacy branch deploy (main:/) instead of 'GitHub Actions'; serves source tree, not the built dist/ artifact"
+    - path: "index.html:26"
+      issue: "Source entry <script type=module src=/src/main.ts> — correct for a Vite source file, but it is what gets wrongly served live; no edit needed"
+  missing:
+    - "Switch Pages source to 'GitHub Actions' (Settings → Pages → Build and deployment → Source), or run: gh api -X POST repos/<owner>/battery-calculator/pages -f build_type=workflow, then re-run the deploy workflow — PRIMARY fix, no code change"
+    - "Document the required 'GitHub Actions' Pages source in the phase deploy plan / README so it isn't re-encountered"
+    - "(Separate, minor) Add a favicon (public/favicon.svg + <link rel=icon> in index.html) to clear the benign /favicon.ico 404"
+  debug_session: .planning/debug/pages-no-styling-404.md
