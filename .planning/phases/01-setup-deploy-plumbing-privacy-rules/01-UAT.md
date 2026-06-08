@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 01-setup-deploy-plumbing-privacy-rules
 source: [01-01-SUMMARY.md, 01-02-SUMMARY.md, 01-03-SUMMARY.md]
 started: 2026-06-08T10:01:33Z
-updated: 2026-06-08T10:06:00Z
+updated: 2026-06-08T12:45:00Z
 ---
 
 ## Current Test
@@ -26,15 +26,14 @@ result: pass
 
 ### 4. Live GitHub Pages Deployment
 expected: After pushing to GitHub and enabling Pages (Settings → Pages → Source → "GitHub Actions"), the Actions run is green (ci job: typecheck + build + lint + format + test + privacy guard + no-reporting-lib, then deploy). The live URL https://<user>.github.io/battery-calculator/ renders the same 3-region shell in a fresh incognito window — no console errors, no CSP violations, zero third-party network requests, no asset 404s.
-result: issue
-reported: "The pages work, but there doesn't seemto be any styling, I also see two 404 errors (main.ts and favicon.ico)"
-severity: major
+result: pass
+note: "First run = issue (no styling, main.ts + favicon.ico 404s). Root cause (debug: pages-no-styling-404.md): Pages Source was legacy branch-deploy, serving the un-built source tree. User flipped Source to 'GitHub Actions'; re-deploy now renders with styling and the main.ts 404 is gone. Re-verified pass 2026-06-08. Favicon (quick task 260608-jx7) clears the /favicon.ico 404 once those commits are pushed/deployed."
 
 ## Summary
 
 total: 4
-passed: 3
-issues: 1
+passed: 4
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -42,7 +41,7 @@ blocked: 0
 ## Gaps
 
 - truth: "The live GitHub Pages site renders with full styling and loads its JS/CSS assets with no 404s"
-  status: failed
+  status: resolved  # re-verified pass 2026-06-08 after Pages Source → "GitHub Actions" + favicon (quick 260608-jx7)
   reason: "User reported: The pages work, but there doesn't seemto be any styling, I also see two 404 errors (main.ts and favicon.ico)"
   severity: major
   test: 4
