@@ -410,4 +410,98 @@ describe('simulate', () => {
     const bad: BatteryConfig = { ...SESSY_5, maxChargeKw: -0.1 }
     expect(() => simulate([sample(T0)], bad)).toThrow()
   })
+
+  // -------------------------------------------------------------------------
+  // Mixed-interval residual conservation (CR-01 gap closure)
+  // Exercises samples where BOTH gridImportKwh > 0 AND gridExportKwh > 0.
+  // Real HomeWizard P1 15-min buckets routinely carry both flows in the same
+  // interval (morning solar surplus + brief demand spike within the bucket).
+  // The corrected contract preserves the non-dominant flow instead of zeroing it.
+  // -------------------------------------------------------------------------
+
+  it('mixed interval — charge branch preserves real gridImportKwh (CR-01 probe)', () => {
+    /**
+     * Sample: gridImportKwh = 2, gridExportKwh = 3 → net = +1 (charge path).
+     * SESSY_5, empty SoC, ~1 h interval (T0 → T1, 1 h delta).
+     *
+     * Charge-branch math:
+     *   eff = sqrt(0.85) ≈ 0.92195
+     *   headroomGridSide = (5.0 − 0) / 0.92195 ≈ 5.423
+     *   gridSideCharge = min(net=1, maxChargeKw×1h=2.2, headroom=5.423) = 1
+     *   intoCell = 1 × 0.92195 ≈ 0.92195; soc ≈ 0.92195
+     *   chargedKwh = 1
+     *   residualExport = 3 − 1 = 2  (export reduced by charge)
+     *   residualImport = 2           (CORRECTED: real import preserved, NOT zeroed)
+     *
+     * Conservation identity on the mixed row:
+     *   residualImport + residualExport = 2 + 2 = 4
+     *   gridImportKwh + gridExportKwh − chargedKwh − dischargedKwh = 2 + 3 − 1 − 0 = 4 ✓
+     */
+    const result = simulate(
+      [
+        sample(T0, 0, 0),          // lead sample; establishes ~1 h interval duration
+        sample(T1, 2, 3),          // mixed: import=2, export=3 → net=+1 → charge
+      ],
+      SESSY_5,
+    )
+    const mixedRow = result.trace[1]
+
+    // Probe assertion (this FAILS against the unmodified simulate.ts — RED state)
+    expect(mixedRow.residualImportKwh).toBeCloseTo(2, 3)
+
+    // Residual export is reduced by the charge
+    expect(mixedRow.residualExportKwh).toBeCloseTo(2, 3)
+
+    // chargedKwh = gridSideCharge = 1
+    expect(mixedRow.chargedKwh).toBeCloseTo(1, 3)
+
+    // Energy conservation on the mixed row:
+    //   residualImport + residualExport == gridImportKwh + gridExportKwh − chargedKwh − dischargedKwh
+    const conservation =
+      mixedRow.residualImportKwh +
+      mixedRow.residualExportKwh -
+      (2 + 3 - mixedRow.chargedKwh - mixedRow.dischargedKwh)
+    expect(conservation).toBeCloseTo(0, 3)
+  })
+
+  it('mixed interval — discharge branch preserves real gridExportKwh (CR-01 probe)', () => {
+    /**
+     * Sample: gridImportKwh = 3, gridExportKwh = 1 → net = -2 (discharge path).
+     * SESSY_5, empty SoC → delivered = 0 (nothing to discharge).
+     *
+     * Discharge-branch math:
+     *   demand = 2
+     *   soc × eff = 0 × eff = 0; delivered = min(2, 0, 1.7×1) = 0
+     *   residualImport = gridImportKwh − delivered = 3 − 0 = 3  (CORRECTED)
+     *   residualExport = gridExportKwh = 1                        (CORRECTED: NOT zeroed)
+     *
+     * Conservation identity:
+     *   residualImport + residualExport = 3 + 1 = 4
+     *   gridImportKwh + gridExportKwh − chargedKwh − dischargedKwh = 3 + 1 − 0 − 0 = 4 ✓
+     */
+    const result = simulate(
+      [
+        sample(T0, 0, 0),          // lead sample
+        sample(T1, 3, 1),          // mixed: import=3, export=1 → net=-2 → discharge path
+      ],
+      SESSY_5,
+    )
+    const mixedRow = result.trace[1]
+
+    // Probe assertion (this FAILS against the unmodified simulate.ts — RED state)
+    expect(mixedRow.residualExportKwh).toBeCloseTo(1, 3)
+
+    // residualImport = gridImportKwh − delivered = 3 − 0 (empty battery)
+    expect(mixedRow.residualImportKwh).toBeCloseTo(3, 3)
+
+    // Nothing discharged from empty battery
+    expect(mixedRow.dischargedKwh).toBeCloseTo(0, 3)
+
+    // Energy conservation on the mixed row
+    const conservation =
+      mixedRow.residualImportKwh +
+      mixedRow.residualExportKwh -
+      (3 + 1 - mixedRow.chargedKwh - mixedRow.dischargedKwh)
+    expect(conservation).toBeCloseTo(0, 3)
+  })
 })
