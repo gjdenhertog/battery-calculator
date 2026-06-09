@@ -489,15 +489,17 @@ export interface SimOptions {
 
 **If the planner prefers zero `[ASSUMED]` in the shipped catalog:** add a `checkpoint:human-verify` task to spot-check A-2/A-5/A-6 against the linked datasheets, OR accept them as documented v1 defaults (recommended — this is a consumer sizing gut-check, and every figure here is a real-world-plausible mid-point with a cited source).
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Trace `chargedKwh` semantics (grid-side vs into-cell)** — A-1.
+1. **Trace `chargedKwh` semantics (grid-side vs into-cell)** — A-1. **RESOLVED: grid-side.**
    - What we know: criterion 2 expects 0.55 (grid-side).
    - What's unclear: whether the one-week criterion-1 fixture's `shiftedKwh` was hand-computed assuming grid-side or into-cell charge accounting.
    - Recommendation: report `chargedKwh` grid-side (matches criterion 2), `dischargedKwh` as delivered energy; `shiftedKwh` = sum of `dischargedKwh`. Document in the module header. The planner hand-computes criterion 1 against this convention.
+   - **Resolution:** Locked grid-side in plan 03-02 `<locked_physics>` + acceptance criteria.
 
-2. **Exactly 7 vs 8 catalog entries** — D-09 says ~6–8.
+2. **Exactly 7 vs 8 catalog entries** — D-09 says ~6–8. **RESOLVED: 7 entries.**
    - Recommendation: ship the 7 above; add Growatt ARK 2.5H as #8 only if the planner wants a second small/modular anchor.
+   - **Resolution:** Locked at 7 entries in plan 03-01.
 
 ## Environment Availability
 
