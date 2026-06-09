@@ -1,5 +1,7 @@
 import './styles/global.css'
+import './styles/drop-zone.css' // Phase 2: drop-zone state CSS
 import { renderShell } from './shell'
+import { initDropZone } from './ui/drop-zone'
 
 // The 3-region shell is pre-rendered in index.html for static delivery.
 // renderShell is exported from shell.ts and used by:
@@ -12,4 +14,9 @@ import { renderShell } from './shell'
 const app = document.getElementById('app')
 if (app && app.children.length === 0) {
   renderShell(app)
+}
+
+const dropZoneRegion = document.getElementById('drop-zone-region')
+if (dropZoneRegion) {
+  initDropZone(dropZoneRegion)
 }
