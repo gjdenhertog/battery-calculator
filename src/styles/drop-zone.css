@@ -1,0 +1,127 @@
+/* src/styles/drop-zone.css */
+/* Drop-zone state classes and readout layout. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* Note: #drop-zone-region base rules (margin, padding, min-height, border-radius) */
+/* live in global.css — do NOT re-declare them here. This file overrides only  */
+/* border and background-color for non-idle states.                             */
+
+/* ── Drop-zone state classes ─────────────────────────────────────────────── */
+
+/* idle: inherited from global.css (#drop-zone-region base rules). */
+/* The class is added by JS but all idle visuals come from global.css. */
+.drop-zone--idle {
+  /* No overrides needed — global.css already provides idle appearance. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+/* dragover: accent border + 8% accent tint background */
+.drop-zone--dragover {
+  border: 1px solid var(--color-accent);
+  background-color: rgb(37 99 235 / 0.08); /* accent at 8% — one-off, not tokenized */
+  cursor: copy;
+}
+
+/* parsing: same as idle (status text added by JS) */
+.drop-zone--parsing {
+  /* inherits idle appearance; no visual override needed */
+}
+
+/* success: same as idle (readout rendered below by JS) */
+.drop-zone--success {
+  /* inherits idle appearance */
+}
+
+/* error: destructive border */
+.drop-zone--error {
+  border: 1px solid var(--color-destructive);
+}
+
+/* ── Drop instruction text ────────────────────────────────────────────────── */
+
+.drop-instruction {
+  margin: 0;
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+}
+
+/* ── File picker (accessible hidden input + styled label) ────────────────── */
+
+/* Visually hidden but accessible — clip-path keeps it in the a11y tree */
+.file-picker-input {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Label styled as a button — min-height 44px (WCAG 2.5.5 touch target) */
+.file-picker-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  background-color: var(--color-bg);
+  color: var(--color-accent);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+}
+
+/* ── Parse status text (visible during parsing/success states) ───────────── */
+
+.parse-status {
+  margin: 0;
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+/* ── Parse error message (visible during error state) ───────────────────── */
+
+.parse-error {
+  margin: 0;
+  font-size: var(--font-size-body);
+  color: var(--color-destructive);
+}
+
+/* ── Sanity readout (#parse-readout) ─────────────────────────────────────── */
+
+#parse-readout {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+/* Divider between readout groups */
+.readout-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-md) 0;
+}
+
+/* dt: label — smaller, muted */
+#parse-readout dt {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+/* dd: value — body size, primary text color, no browser default margin */
+#parse-readout dd {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  margin-left: 0;
+  margin-bottom: var(--space-sm);
+}
+
+/* Soft warning entries — muted color (D-09: not errors, not destructive) */
+#parse-readout .readout-warning {
+  color: var(--color-text-muted);
+}
