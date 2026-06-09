@@ -1,29 +1,24 @@
 ---
 phase: 03-battery-simulator-and-curated-catalog
-verified: 2026-06-09T17:05:00Z
-status: gaps_found
-score: 10/11 must-haves verified
+verified: 2026-06-09T22:51:00Z
+status: passed
+score: 11/11 must-haves verified
 overrides_applied: 0
-gaps:
-  - truth: "simulate() produces correct residualImportKwh and residualExportKwh for mixed intervals (both gridImportKwh > 0 and gridExportKwh > 0 in the same sample)"
-    status: failed
-    reason: "CR-01 (code review finding): in the charge branch, simulate.ts line 218 hard-sets residualImport = 0 regardless of whether real grid import existed in the interval. In a mixed interval (e.g. import=2, export=3), net=+1 routes to the charge path and the real 2 kWh of grid import is silently deleted from residualImportKwh. Confirmed by a probe test: residualImportKwh is 0 (actual) vs 2 (expected). This breaks the SimResult invariant documented in types.ts lines 250-253 ('residualImportKwh/residualExportKwh are the honest what-would-remain totals'). No test exercises a both-nonzero interval; the default sample() helper in tests uses 0.1/0.05 but no fixture asserts residual conservation on those rows."
-    artifacts:
-      - path: "src/domain/simulate.ts"
-        issue: "Line 218: residualImport = 0 unconditionally in the charge branch; line 229: residualExport = 0 unconditionally in the discharge branch. Both should preserve the non-dominant flow."
-      - path: "tests/simulate.test.ts"
-        issue: "No test fixture uses a sample with both gridImportKwh > 0 and gridExportKwh > 0 and then asserts residual conservation. The gap is invisible to the suite."
-    missing:
-      - "Fix simulate.ts: in the charge branch, set residualImport = s.gridImportKwh (preserve real import) and residualExport = s.gridExportKwh - gridSideCharge. In the discharge branch, set residualExport = s.gridExportKwh (preserve real export) and residualImport = s.gridImportKwh - delivered (net demand minus delivered)."
-      - "Add a test in tests/simulate.test.ts with a sample where both gridImportKwh > 0 and gridExportKwh > 0, asserting that residualImportKwh + residualExportKwh accounts for all original grid energy minus the battery action (energy conservation)."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 10/11
+  gaps_closed:
+    - "simulate() produces correct residualImportKwh and residualExportKwh for mixed intervals (both gridImportKwh > 0 and gridExportKwh > 0 in the same sample)"
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 3: Battery Simulator and Curated Catalog — Verification Report
 
 **Phase Goal:** A pure `simulate(samples, batteryConfig, options) → SimResult` function with verified correctness on hand-computed fixtures, plus a curated catalog of ~6–10 NL batteries with datasheet-cited specs. No UI; proven correct via Vitest only.
-**Verified:** 2026-06-09T17:05:00Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
+**Verified:** 2026-06-09T22:51:00Z
+**Status:** passed
+**Re-verification:** Yes — after gap closure (03-04: CR-01 mixed-interval residual conservation)
 
 ---
 
@@ -33,7 +28,7 @@ gaps:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `simulate(samples, batteryConfig, options) → SimResult` exists in `src/domain/` with zero browser/DOM dependencies | ✓ VERIFIED | `src/domain/simulate.ts` exports `simulate()`. Single import from `./types`. Header contains "Pure function — no browser globals, safe to run in a Node environment." `npm test` passes in Node env without jsdom. |
+| 1 | `simulate(samples, batteryConfig, options) → SimResult` exists in `src/domain/` with zero browser/DOM dependencies | ✓ VERIFIED | `src/domain/simulate.ts` exports `simulate()`. Single import from `./types`. Header contains "Pure function — no browser globals, safe to run in a Node environment." All 165 tests pass in Node env without jsdom. |
 | 2 | Power clamping: a 2.2 kW charger over a 0.25 h slot charges 0.55 kWh, not the full 1.5 kWh surplus | ✓ VERIFIED | Test "power clamp — small battery cant catch the peak (criterion 2)" asserts `trace[1].chargedKwh toBeCloseTo(0.55, 3)` and `trace[1].residualExportKwh toBeCloseTo(0.95, 3)`. Passes green. |
 | 3 | 5 kWh nominal @ 90% DoD never stores more than 4.5 kWh; sqrt(rte) applied symmetrically each way | ✓ VERIFIED | Test "round-trip — DoD cap + sqrt(rte) each way (criterion 3)" asserts `dischargedKwh toBeCloseTo(4.269, 2)` and `maxSoc <= 4.5 + 1e-9`. "DoD cap — socKwh never exceeds nominal×dod across all intervals" adds CRIT3 invariant check. Both green. |
 | 4 | Multi-day no-export dataset shifts 0 kWh (empty-SoC conservatism, D-06) | ✓ VERIFIED | Test "multi-day no-export — battery never discharges phantom energy (D-06)" asserts `shiftedKwh === 0`, all SoC = 0, residualImport = total import. Green. |
@@ -43,9 +38,9 @@ gaps:
 | 8 | Catalog ships 6–8 NL batteries with Sessy 5 kWh first; all five physics fields + datasheetUrl per entry | ✓ VERIFIED | `src/domain/battery-catalog.ts` has 7 entries, sessy-5 at index 0. Catalog test asserts count (6–8), first id, all physics fields, unique IDs, dodFraction=1.0 for usable-quoting vendors. Green. |
 | 9 | Hand-computed one-week fixture matches expected aggregates within toBeCloseTo(_, 3) | ✓ VERIFIED | Test "one-week aggregate — hand-computed shiftedKwh/residualImport/residualExport" with five intervals, all assertions green: shiftedKwh≈1.8, residualImport≈0.5, residualExport≈0.0. |
 | 10 | simulate() correctly handles single-sample, 2-sample, and empty inputs without NaN | ✓ VERIFIED | Three "interval duration" tests cover empty, single, and 2-sample inputs. All pass, no NaN. |
-| 11 | simulate() produces correct residualImportKwh/residualExportKwh for mixed intervals (both import > 0 and export > 0 in same sample) | ✗ FAILED | CR-01 confirmed live: probe test shows `residualImportKwh = 0` when a mixed interval with import=2, export=3 is fed to simulate(). The charge branch sets `residualImport = 0` unconditionally (line 218), silently deleting real grid import. No test covers this case. |
+| 11 | simulate() produces correct residualImportKwh and residualExportKwh for mixed intervals (both gridImportKwh > 0 and gridExportKwh > 0 in the same sample) | ✓ VERIFIED | **CR-01 gap closed.** Two new probe tests added and passing: "mixed interval — charge branch preserves real gridImportKwh (CR-01 probe)" and "mixed interval — discharge branch preserves real gridExportKwh (CR-01 probe)". Charge-branch probe: sample(import=2, export=3, net=+1) → residualImportKwh=2 (was 0 before fix). Discharge-branch probe: sample(import=3, export=1, net=-2, empty battery) → residualExportKwh=1 (was 0 before fix). Both probes verify the energy-conservation identity: residualImport + residualExport == gridImport + gridExport − chargedKwh − dischargedKwh. |
 
-**Score:** 10/11 truths verified
+**Score:** 11/11 truths verified
 
 ---
 
@@ -56,8 +51,8 @@ gaps:
 | `src/domain/types.ts` | BatteryConfig, TraceRow, SimResult, SimOptions interfaces | ✓ VERIFIED | All four interfaces present. BatteryConfig (8 fields), TraceRow (6 fields), SimResult (9 fields + trace), SimOptions (1 optional field). IntervalSample unchanged. |
 | `src/domain/battery-catalog.ts` | BATTERY_CATALOG typed array, Sessy 5 first | ✓ VERIFIED | 7-entry `readonly BatteryConfig[]` as const. sessy-5 at index 0. Pure-data header with usable-vs-DoD convention. 93 lines — substantive. |
 | `tests/catalog.test.ts` | Catalog shape + Sessy-first + datasheet-URL assertions | ✓ VERIFIED | 5 tests covering count, default, physics fields, unique IDs, dodFraction for usable-quoting vendors. |
-| `src/domain/simulate.ts` | simulate() pure dispatch engine + intervalHoursFor() | ✓ VERIFIED (defective for mixed intervals) | 261 lines. Exports `simulate()`, `InvalidBatteryConfigError`. Imports only from `./types`. Correctly implements power clamping, DoD cap, sqrt(rte), empty-SoC start. Defect: residual accounting in mixed intervals (CR-01). |
-| `tests/simulate.test.ts` | Hand-computed fixture suite with toBeCloseTo | ✓ VERIFIED (coverage gap) | 413 lines, 16 tests covering all nine required behaviors. All pass. Gap: no test exercises a both-nonzero import/export interval for residual conservation. |
+| `src/domain/simulate.ts` | simulate() pure dispatch engine + intervalHoursFor() | ✓ VERIFIED | 261 lines. Exports `simulate()`, `InvalidBatteryConfigError`. Imports only from `./types`. Correctly implements power clamping, DoD cap, sqrt(rte), empty-SoC start, and mixed-interval residual preservation (CR-01 fix on lines 218 and 228–229). |
+| `tests/simulate.test.ts` | Hand-computed fixture suite with toBeCloseTo, including mixed-interval conservation | ✓ VERIFIED | 507 lines, 18 tests (2 new CR-01 probes added). All 18 pass. Mixed-interval coverage now complete: charge-branch probe and discharge-branch probe both assert residual conservation identity. |
 | `src/domain/compare.ts` | runComparison() thin order-preserving map | ✓ VERIFIED | 32 lines. Single-expression implementation. Pure-domain header with BATT-05-deferred note. |
 | `tests/compare.test.ts` | Order-preservation + mixed catalog/custom + no-mutation | ✓ VERIFIED | 147 lines, 8 tests. Index alignment, distinguishable shiftedKwh, mixed array, empty→[], no-mutation for both inputs. |
 
@@ -88,9 +83,11 @@ Not applicable. Phase 3 is a pure computation layer with no UI components or dyn
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Full test suite passes | `npx vitest run` | 163 tests, 14 files, all passed | ✓ PASS |
+| Full test suite passes | `npx vitest run` | 165 tests, 14 files, all passed | ✓ PASS |
 | TypeScript type check | `npx tsc --noEmit` | No output (exit 0) | ✓ PASS |
-| CR-01 mixed-interval probe | Targeted test: mixed sample(import=2, export=3) → residualImportKwh | Got 0, expected 2 | ✗ FAIL |
+| CR-01 charge-branch probe | Test "mixed interval — charge branch preserves real gridImportKwh (CR-01 probe)": sample(import=2, export=3) → residualImportKwh | Got 2 (expected 2) | ✓ PASS |
+| CR-01 discharge-branch probe | Test "mixed interval — discharge branch preserves real gridExportKwh (CR-01 probe)": sample(import=3, export=1, empty battery) → residualExportKwh | Got 1 (expected 1) | ✓ PASS |
+| CR-01 energy conservation identity | Both probes assert residualImport + residualExport == gridImport + gridExport − charged − discharged | Identity holds (toBeCloseTo(0, 3)) | ✓ PASS |
 
 ---
 
@@ -113,10 +110,10 @@ No `probe-*.sh` files declared or found for this phase. Behavioral spot-checks a
 | SIM-02 | 03-02 | Power clamping: charge = min(surplusKwh, maxChargeKw × h, capacityRemainingKwh) | ✓ SATISFIED | Criterion-2 test asserts 0.55 kWh charged (not 1.5). Discharge clamp test asserts ≤1.7 kWh. Both pass. |
 | SIM-03 | 03-02 | sqrt(rte) applied symmetrically each way | ✓ SATISFIED | Criterion-3 fixture: CRIT3 battery (rte=0.90) produces 4.269 kWh discharged = 4.5 × sqrt(0.9). |
 | SIM-04 | 03-02 | Usable capacity (DoD) honored; never stores more than nominal × dod | ✓ SATISFIED | DoD cap invariant test checks every trace row for both SESSY_5 and CRIT3. Passes. |
-| SIM-05 | 03-02 | Hand-computed fixture tests: one-week, small-battery, no-export edge cases | ✓ SATISFIED | 16 fixtures in simulate.test.ts covering all required cases. See caveat: mixed-interval case missing. |
+| SIM-05 | 03-02 | Hand-computed fixture tests: one-week, small-battery, no-export edge cases | ✓ SATISFIED | 18 fixtures in simulate.test.ts covering all required cases including two new mixed-interval conservation fixtures (CR-01 gap closure). |
 | SIM-06 | 03-03 | runComparison() aggregates per-battery results into comparable structure | ✓ SATISFIED | compare.ts: `batteries.map((b) => simulate(...))`. compare.test.ts 8 assertions. All pass. |
 
-All 11 Phase 3 requirements traceable and satisfied at the surface level. SIM-05 has a coverage gap (no mixed-interval fixture), which is the same defect as CR-01.
+All 11 Phase 3 requirements traceable and satisfied. No coverage gaps remain.
 
 ---
 
@@ -124,11 +121,9 @@ All 11 Phase 3 requirements traceable and satisfied at the surface level. SIM-05
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| `src/domain/simulate.ts` | 218 | `residualImport = 0` unconditional in charge branch | 🛑 BLOCKER | Silently deletes real grid import from `residualImportKwh` aggregate when both `gridImportKwh > 0` and `gridExportKwh > 0` in the same interval. Violates the SimResult invariant; real-world P1 data routinely produces such intervals. |
-| `src/domain/simulate.ts` | 229 | `residualExport = 0` unconditional in discharge branch | 🛑 BLOCKER (same root cause as above) | Silently deletes real grid export from `residualExportKwh` aggregate in mixed intervals on the discharge side. |
-| `tests/simulate.test.ts` | all | No test with both `gridImportKwh > 0` and `gridExportKwh > 0` asserting conservation | ⚠️ WARNING | The CR-01 defect has no regression coverage. The `sample()` helper defaults to `(0.1, 0.05)` but no assertion checks residual conservation on those rows. |
+| (none) | — | — | — | — |
 
-No `TBD`, `FIXME`, or `XXX` debt markers found in any Phase 3 source file.
+No `TBD`, `FIXME`, or `XXX` debt markers found in any Phase 3 source file. The two previously-flagged blocker lines (218 and 229) have been corrected: line 218 now reads `residualImport = s.gridImportKwh` (preserve real grid draw, CR-01 comment), and line 228–229 now reads `residualImport = s.gridImportKwh - delivered` / `residualExport = s.gridExportKwh` respectively.
 
 ---
 
@@ -140,20 +135,15 @@ None — this phase is pure computation, Vitest-only, no UI.
 
 ### Gaps Summary
 
-**One blocker gap exists.**
+No gaps. The single blocker identified in the initial verification (CR-01: unconditional zeroing of the non-dominant residual flow in mixed-interval samples) was fixed by plan 03-04:
 
-CR-01 in the code review identified an energy conservation defect in `src/domain/simulate.ts`. This verifier ran a targeted probe confirming the defect is live:
+- `src/domain/simulate.ts` charge branch (line 218): `residualImport = s.gridImportKwh` — real grid draw preserved on mixed intervals.
+- `src/domain/simulate.ts` discharge branch (line 228–229): `residualImport = s.gridImportKwh - delivered` and `residualExport = s.gridExportKwh` — real export preserved on mixed intervals.
+- `tests/simulate.test.ts`: Two new CR-01 probe tests added and passing, asserting the energy-conservation identity for both the charge-dominant and discharge-dominant mixed-interval cases.
 
-- A mixed-interval sample with `gridImportKwh = 2` and `gridExportKwh = 3` routed to the charge branch (net = +1), the battery charges 1 kWh, and `residualImportKwh` in the trace is **0** instead of 2.
-- The real 2 kWh of grid draw is silently discarded.
-- The phase goal specifically requires "verified correctness on hand-computed fixtures." The documented invariant in `types.ts:250-253` ("residualImportKwh/residualExportKwh are the what-would-remain totals") is violated for any input with both fields nonzero in the same interval.
-- Real HomeWizard P1 exports aggregated over 15-minute buckets **do** produce intervals with both import and export nonzero (e.g., a solar surplus in the morning combined with a brief demand spike within the same bucket). The defect is not a theoretical edge case.
-
-The remaining 10 of 11 must-haves are fully verified. All tests pass. TypeScript is clean. The catalog, type contracts, and structural wiring are all correct and complete.
-
-**Disposition on later phases:** CR-01 is not addressed in Phase 4 or Phase 5 ROADMAP success criteria. Phase 4 wraps `runComparison` in a Comlink worker and adds the UI layer; it does not re-examine or correct the simulator's residual accounting. The defect must be fixed in Phase 3 before Phase 4 consumes these aggregates in the comparison table.
+All 11 must-haves are now verified. The full test suite runs 165 tests across 14 files with zero failures. TypeScript type-check is clean.
 
 ---
 
-_Verified: 2026-06-09T17:05:00Z_
+_Verified: 2026-06-09T22:51:00Z_
 _Verifier: Claude (gsd-verifier)_
