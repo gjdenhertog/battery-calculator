@@ -4,3 +4,9 @@ coverage
 *.local
 .DS_Store
 *.tsbuildinfo
+
+# Local scratch CSVs for manual drag-drop testing. Real personal P1 exports
+# should not be committed casually — this is a privacy-first project. Curated
+# fixtures referenced by tests are added explicitly with `git add -f`.
+tests/fixtures/P1e-*.csv
+tests/fixtures/broken.csv
