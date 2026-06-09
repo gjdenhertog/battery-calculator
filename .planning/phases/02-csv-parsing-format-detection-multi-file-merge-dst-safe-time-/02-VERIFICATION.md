@@ -1,8 +1,10 @@
 ---
 phase: 02-csv-parsing-format-detection-multi-file-merge-dst-safe-time
 verified: 2026-06-09T12:30:00Z
-status: human_needed
+status: passed
 score: 7/7 must-haves verified
+human_items_resolved_in: 02-HUMAN-UAT.md
+human_items_note: "3 human-verification items resolved — readout totals & 50k-row no-freeze confirmed live at Plan 02-04 Task 3 checkpoint; partial-garbage (100abc) rejection locked by automated test."
 overrides_applied: 0
 human_verification:
   - test: "Drop a real HomeWizard P1 CSV and confirm the sanity readout shows correct totals (file count, rows, date range, import kWh, export kWh, gap count) matching independently calculated values within rounding"
