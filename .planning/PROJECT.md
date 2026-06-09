@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-07 after Phase 1 (Setup, Deploy Plumbing, Privacy Rules) complete — scaffold, CSP, CI/deploy pipeline shipped; live-deploy reachability pending human verification (01-HUMAN-UAT.md)*
+*Last updated: 2026-06-09 after Phase 3 (Battery Simulator and Curated Catalog) complete — the bottom-up domain core is now proven by Vitest: Phase 2 shipped the DST-safe CSV→`IntervalSample[]` data layer; Phase 3 shipped the pure `simulate()` dispatch engine (capacity/power/round-trip/DoD fidelity), a 7-entry curated NL catalog (Sessy 5 default), and `runComparison()`. Verified 11/11 must-haves; the mixed-interval residual energy-conservation gap (CR-01) was caught by code review and closed in 03-04. No UI yet — Active requirements remain unvalidated (user-facing) until the Phase 4 comparison UI lands. Phase 1 live-deploy reachability still pending human verification (01-HUMAN-UAT.md).*
