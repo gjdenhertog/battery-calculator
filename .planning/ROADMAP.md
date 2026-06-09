@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green (completed 2026-06-07)
 - [x] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing (completed 2026-06-09)
-- [ ] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support
+- [x] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support (completed 2026-06-09)
 - [ ] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns
 - [ ] **Phase 5: Visualizations, Polish, Transparent-Assumptions UI** - Monthly self-consumption bars + sample-week step-line flow chart; assumptions panel; "no euros" explainer; Dutch copy pass; mobile layout; honest terminology audit
 
@@ -69,7 +69,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 - [x] 03-01-PLAN.md — Extend types.ts (BatteryConfig/SimResult/TraceRow/SimOptions) + 7-entry NL catalog + catalog test (BATT-01..03)
 - [x] 03-02-PLAN.md — Pure simulate() dispatch engine + intervalHoursFor() + hand-computed fixture suite (SIM-01..05, BATT-04, D-04..07)
-- [ ] 03-03-PLAN.md — runComparison() order-preserving aggregator + mixed catalog/custom test (SIM-06, BATT-05)
+- [x] 03-03-PLAN.md — runComparison() order-preserving aggregator + mixed catalog/custom test (SIM-06, BATT-05)
 
 ### Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State
 **Goal**: The differentiator — multi-battery side-by-side comparison from the user's own CSV — lands as a working UI on top of the proven simulator. Reactive state (signals), parser worker, simulator worker (Comlink), comparison table with saldering on/off as side-by-side columns per battery, headline metric "kWh grid import avoided", marginal capture rate, per-row leader highlighting, period coverage indicator.
@@ -108,6 +108,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
-| 3. Battery Simulator and Curated Catalog | 2/3 | In Progress|  |
+| 3. Battery Simulator and Curated Catalog | 3/3 | Complete   | 2026-06-09 |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
