@@ -1,121 +1,79 @@
 ---
 phase: 03-battery-simulator-and-curated-catalog
-reviewed: 2026-06-09T00:00:00Z
+reviewed: 2026-06-09T22:49:00Z
 depth: standard
-files_reviewed: 7
+files_reviewed: 2
 files_reviewed_list:
-  - src/domain/types.ts
-  - src/domain/battery-catalog.ts
   - src/domain/simulate.ts
-  - src/domain/compare.ts
-  - tests/catalog.test.ts
   - tests/simulate.test.ts
-  - tests/compare.test.ts
 findings:
-  critical: 1
-  warning: 5
-  info: 4
-  total: 10
+  critical: 0
+  warning: 4
+  info: 3
+  total: 7
 status: issues_found
 ---
 
-# Phase 3: Code Review Report
+# Phase 3: Code Review Report (Gap-Closure Re-Review)
 
-**Reviewed:** 2026-06-09T00:00:00Z
+**Reviewed:** 2026-06-09T22:49:00Z
 **Depth:** standard
-**Files Reviewed:** 7
+**Files Reviewed:** 2 (`src/domain/simulate.ts`, `tests/simulate.test.ts`)
 **Status:** issues_found
 
 ## Summary
 
-The Phase 3 domain layer (battery type contracts, curated NL catalog, per-interval
-dispatch engine, multi-battery comparison) is well-structured, pure, and free of
-network/secret concerns — appropriate for the client-side privacy constraint. The
-dispatch math for the *single-flow* case (an interval is either net-import or
-net-export) is correct: power clamping, symmetric `sqrt(rte)`, and the DoD hard cap
-all match the hand-computed test fixtures.
+This is a targeted re-review of the CR-01 fix for mixed import+export intervals.
+**CR-01 is genuinely resolved.** The charge branch now preserves `residualImport =
+s.gridImportKwh`; the discharge branch sets `residualImport = s.gridImportKwh −
+delivered` and preserves `residualExport = s.gridExportKwh`. Energy conservation holds
+on mixed intervals, both residuals are provably `>= 0`, and the fix introduces no new
+defect. The two new conservation fixtures assert real (non-tautological) values and
+pass. The full suite runs green (18/18).
 
-However, adversarial tracing surfaces a real energy-accounting defect in **mixed
-intervals** (an interval carrying *both* `gridImportKwh > 0` and `gridExportKwh > 0`),
-which the `IntervalSample` type explicitly permits and which real aggregated P1 data
-produces. In those intervals the simulator collapses to a single `net` value and then
-**forces the non-dominant residual to zero**, silently deleting real grid energy from
-the residual aggregates. This breaks the energy-conservation invariant the `SimResult`
-doc claims (`residualImport`/`residualExport` are the "what would remain" totals) and
-is not covered by any test. There are also robustness gaps around NaN-valued timestamps
-and a fencepost in `periodDays`.
+The fix is clean. The remaining findings are all pre-existing warnings/info from the
+prior review that still live in these two files and were **not** in CR-01's scope —
+re-reported here so the artifact stays current. No new BLOCKER/Critical issues.
 
-## Critical Issues
+### CR-01 verification (RESOLVED)
 
-### CR-01: Mixed import+export intervals silently delete real grid energy (conservation break)
+Traced both branches against the type invariant `residual* >= 0` (`types.ts:225,239-242`):
 
-**File:** `src/domain/simulate.ts:201-230`
-**Issue:**
-The dispatch reduces each interval to `net = gridExportKwh − gridImportKwh` and branches
-on its sign. In the charge branch it unconditionally sets `residualImport = 0`; in the
-discharge branch it unconditionally sets `residualExport = 0`. When an interval carries
-**both** a nonzero import and a nonzero export, the smaller of the two is erased from the
-output aggregates rather than passed through as residual.
+- **Charge branch** (`simulate.ts:208-218`): `gridSideCharge = min(net, …)` and
+  `net = gridExportKwh − gridImportKwh <= gridExportKwh`, so
+  `residualExport = gridExportKwh − gridSideCharge >= gridImportKwh >= 0`. `residualImport
+  = gridImportKwh` is untouched. Non-dominant import flow is preserved. ✓
+- **Discharge branch** (`simulate.ts:219-229`): `delivered = min(demand, soc·eff,
+  maxDischargeKw·h)` and `demand = −net = gridImportKwh − gridExportKwh <= gridImportKwh`,
+  so `residualImport = gridImportKwh − delivered >= gridExportKwh >= 0`. `residualExport =
+  gridExportKwh` is untouched. Non-dominant export flow is preserved. ✓
+- **Conservation:** on any row, `residualImport + residualExport =
+  gridImport + gridExport − charged − discharged` holds in both branches (and trivially in
+  the `net === 0` fall-through where nothing is dispatched). No real grid kWh is deleted. ✓
 
-`IntervalSample` does not forbid this — its invariants only require both fields `>= 0`
-(`types.ts:28-31`), and aggregated/merged P1 data routinely shows both import and export
-within the same 15-minute bucket. Traced example with Sessy 5 kWh, `import=2`, `export=3`,
-empty SoC, 1 h interval:
+### New-fixture audit (not tautological, not over-fitted)
 
-```
-net = +1  → charge branch
-gridSideCharge = min(1, 2.2, headroom) = 1
-charged          = 1
-residualExport   = 3 − 1 = 2
-residualImport   = 0      ← the real 2 kWh of grid import is DELETED
-```
-
-`totalResidualImport` loses 2 kWh that the household genuinely drew from the grid. The
-`SimResult` doc (`types.ts:250-253`) promises `residualImportKwh`/`residualExportKwh` are
-the honest "what would remain" totals; here they understate residual import and the result
-is optimistically wrong — exactly the failure mode the project's "honest comparison" value
-statement warns against. No test exercises a both-nonzero interval (all fixtures set one
-side to 0), so the suite gives false confidence.
-
-**Fix:** Either (a) document and enforce that simultaneous import+export is not allowed and
-validate it at entry, or (b) preserve the non-dominant flow in the residual. Preferred (b):
-
-```ts
-if (net > 0) {
-  const headroomGridSide = (usable - soc) / eff
-  const gridSideCharge = Math.min(net, config.maxChargeKw * h, headroomGridSide)
-  soc = Math.min(soc + gridSideCharge * eff, usable)
-  charged = gridSideCharge
-  // Preserve any genuine import; only the net surplus was available to charge.
-  residualExport = s.gridExportKwh - gridSideCharge
-  residualImport = s.gridImportKwh            // was forced to 0
-} else if (net < 0) {
-  const demand = -net
-  const delivered = Math.min(demand, soc * eff, config.maxDischargeKw * h)
-  soc -= delivered / eff
-  if (soc < 0) soc = 0
-  discharged = delivered
-  residualImport = s.gridImportKwh - delivered // net demand already nets out export
-  residualExport = s.gridExportKwh             // was forced to 0
-}
-```
-
-Add a test with `import>0 && export>0` asserting
-`residualImport + charged_offset ≈ original import` style conservation. (Confirm the exact
-residual algebra against the intended model with the phase author — the key requirement is
-that no real grid kWh disappears from the aggregates.)
+`tests/simulate.test.ts:422-465` and `467-506` each (a) pin `residualImportKwh` and
+`residualExportKwh` to independently hand-computed targets (2/2 and 3/1 respectively) and
+(b) assert the balance identity separately. The identity uses literal `2+3` / `3+1` for
+the grid terms but reads `charged`/`discharged` back from the result, so a wrong charge
+value would still break it. The probes are correctly designed to fail against the old
+(zeroing) implementation. Adequate coverage of the fix.
 
 ## Warnings
 
 ### WR-01: Invalid/NaN timestamps poison every aggregate with no guard
 
 **File:** `src/domain/simulate.ts:76, 88-91, 247-249`
-**Issue:** `intervalHoursFor` and `periodDays` call `timestamp.getTime()` with no finiteness
-check. An `Invalid Date` (e.g. produced upstream by a bad parse) returns `NaN`, which flows
-into `hours[i]`, then into every `Math.min(..., maxChargeKw * h, ...)`, poisoning `soc`,
-`shiftedKwh`, and all totals as `NaN`. The config is range-validated at entry (T-03-03) but
-the *samples* are trusted blindly. The "2-sample produces no NaN" test only uses valid dates.
-**Fix:** Validate timestamps at entry (mirror the config guard):
+**Issue:** `intervalHoursFor` and the `periodDays` computation call `timestamp.getTime()`
+with no finiteness check. An `Invalid Date` (e.g. from a bad upstream parse) returns `NaN`,
+which flows into `hours[i]`, then into every `Math.min(…, maxChargeKw * h, …)`, poisoning
+`soc`, `shiftedKwh`, and all totals as `NaN`. The config is range-validated at entry
+(T-03-03) but the *samples* are trusted blindly. The "2-sample produces no NaN" test
+(`tests/simulate.test.ts:251-263`) only uses valid dates, so it cannot catch this. Still
+open after the CR-01 fix.
+**Fix:** Validate sample timestamps (and `gridImportKwh`/`gridExportKwh` finiteness +
+non-negativity per DATA-06) at entry, mirroring the config guard:
 ```ts
 for (let i = 0; i < samples.length; i++) {
   const t = samples[i].timestamp.getTime()
@@ -124,107 +82,87 @@ for (let i = 0; i < samples.length; i++) {
   }
 }
 ```
-(Or a dedicated `InvalidSampleError`.) Also guard `gridImportKwh`/`gridExportKwh` for
-`NaN`/negative, since the DATA-06 invariant is only documented, not enforced here.
+(Or a dedicated `InvalidSampleError`.)
 
 ### WR-02: `periodDays` is off by one interval (fencepost)
 
 **File:** `src/domain/simulate.ts:247-249`
 **Issue:** Timestamps mark the *end* of each interval (`types.ts:26`). `periodDays =
-(lastTs − firstTs) / 86_400_000` therefore measures the span between the *end of the first*
-and *end of the last* interval, undercounting actual coverage by one interval. Five 1-hour
-intervals cover 5 h of data but report `4/24 = 0.1667` days; a 7-day 15-min series reports
-`6 days 23:45`. The field doc says "Number of calendar days covered by the simulation
-period" — this value is consistently short by one interval.
-**Fix:** Add the first interval's duration:
+(lastTs − firstTs) / 86_400_000` measures the span between the *end of the first* and *end
+of the last* interval, undercounting actual coverage by one interval. Five 1-hour intervals
+cover 5 h of data but report `4/24 ≈ 0.1667` days; a 7-day 15-min series reports `6 days
+23:45`. The `SimResult.periodDays` doc (`types.ts:268`) says "Number of calendar days
+covered by the simulation period" — this value is consistently short by one interval. Still
+open; CR-01 did not touch it.
+**Fix:** Add the first interval's duration, or document the field as "span between first and
+last interval-end timestamps":
 ```ts
-const firstH = hours[0]                       // hours of the leading interval
+const firstH = hours[0]
 const periodDays = (lastTs - firstTs + firstH * 3_600_000) / 86_400_000
 ```
-Or document the field as "span between first and last interval-end timestamps" if that is
-the intended semantics.
 
 ### WR-03: Median uses lower-mid index for even-length arrays
 
 **File:** `src/domain/simulate.ts:84, 106`
 **Issue:** Both `intervalHoursFor` and `medianIntervalMinutes` compute the median as
 `sorted[Math.floor(len/2)]`, which for an even count returns the upper of the two middle
-elements (and is not the true average-of-two median). For coarse-cadence detection near the
-60-min threshold this can flip `coarseCadenceWarning` on a series with a 50/50 mix of fine
-and coarse intervals. It matches `merge.ts` so it is consistent, but both are technically
-incorrect medians.
-**Fix:** Either accept and document as "midpoint sample, not interpolated median," or compute
-a true median for even lengths. Consistency with `merge.ts` is the only thing keeping this a
-warning rather than a divergence bug.
+elements (not the interpolated median). For coarse-cadence detection near the 60-min
+threshold this can flip `coarseCadenceWarning` on a series with a 50/50 mix of fine and
+coarse intervals. It matches `merge.ts:114` so it is at least *consistent*. Still open.
+**Fix:** Accept and document as "midpoint sample, not interpolated median," or compute a true
+median for even lengths. Whatever is chosen, keep it identical to `merge.ts` (see WR-05).
 
 ### WR-04: `maxChargeKw`/`maxDischargeKw` validation contradicts the type contract
 
 **File:** `src/domain/simulate.ts:145-156`, `src/domain/types.ts:208-211`
-**Issue:** The type doc states `maxChargeKw and maxDischargeKw > 0`, but the runtime guard
-only rejects `< 0`, so `0` is accepted. A zero-power battery silently charges/discharges
-nothing — not a crash, but it diverges from the documented invariant and would mask a
-user/UI error (e.g. an unparsed power field defaulting to 0) as a "battery that does
-nothing" rather than a clear validation failure.
+**Issue:** The type doc states `maxChargeKw and maxDischargeKw > 0` (`types.ts:188`), but the
+runtime guard only rejects `< 0`, so `0` is accepted. A zero-power battery silently
+charges/discharges nothing — not a crash, but it diverges from the documented invariant and
+would mask a user/UI error (e.g. an unparsed power field defaulting to 0) as a "battery that
+does nothing" rather than a clear validation failure. Still open.
 **Fix:** Tighten to match the contract: `if (config.maxChargeKw <= 0)` / `<= 0`, with the
-message updated to `moet groter zijn dan 0`. Update the corresponding tests.
+message updated to `moet groter zijn dan 0`. Update the corresponding tests
+(`tests/simulate.test.ts:409-412` currently uses `-0.1`, which would still pass).
 
-### WR-05: Duplicated cadence/median logic across three call sites
+## Info
+
+### IN-01: `medianIntervalMinutes` re-walks deltas already computed in `intervalHoursFor` (WR-05 substrate)
 
 **File:** `src/domain/simulate.ts:81-84, 100-107` and `src/domain/merge.ts:108-115`
 **Issue:** The "median of sorted inter-sample deltas with a 15-min small-input fallback" is
 implemented three times (`intervalHoursFor`, `medianIntervalMinutes`, and `merge.ts`'s
-fallback). They already differ subtly (minutes vs hours, and `intervalHoursFor` does the
-delta walk a second time that `medianIntervalMinutes` repeats). Divergent edits are likely
-and will desync coarse-cadence behavior between the merge layer and the sim layer.
-**Fix:** Extract a single `medianDeltaMs(samples): number` helper (with the documented
-small-input fallback) and derive minutes/hours from it in one place. Reuse it in `merge.ts`.
-
-## Info
-
-### IN-01: Test fixtures never cover a mixed import+export interval
-
-**File:** `tests/simulate.test.ts` (all fixtures), `tests/compare.test.ts:38-42`
-**Issue:** Every fixture sets exactly one of import/export to 0 per interval, so the
-conservation defect in CR-01 is invisible to the suite. The default `sample()` helper does
-use both (`0.1`/`0.05`) but no assertion checks residual conservation on those rows.
-**Fix:** Add a fixture with `import>0 && export>0` and assert that
-`totalImport + totalExport` is fully accounted for across `charged`, `discharged`, and the
-two residuals (energy-balance assertion).
+`inferDominantCadence` fallback). They differ subtly (minutes vs hours) and `simulate.ts`
+walks the deltas twice per call. Divergent edits are likely and would desync coarse-cadence
+behavior between the merge and sim layers. (Prior WR-05 + IN-03, merged here since only
+`simulate.ts`/`tests` are in this re-review's scope.)
+**Fix:** Extract a single `medianDeltaMs(samples): number` helper and derive minutes/hours
+from it in one place; reuse in `merge.ts`.
 
 ### IN-02: `periodDays` doc says "calendar days" but computes elapsed-time days
 
-**File:** `src/domain/types.ts:268-269`
-**Issue:** "Number of calendar days covered" implies a calendar/DST-aware day count, but the
-implementation divides elapsed milliseconds by a fixed `86_400_000`. Across the
-Europe/Amsterdam DST transitions a 24 h elapsed span is 23 h or 25 h of wall-clock, so the
-fractional day count drifts. Given the project's strong DST emphasis (`@date-fns/tz`), the
-wording is misleading.
+**File:** `src/domain/types.ts:268`
+**Issue:** "Number of calendar days covered" implies a calendar/DST-aware count, but the
+implementation divides elapsed milliseconds by a fixed `86_400_000`. Across Europe/Amsterdam
+DST transitions a 24 h elapsed span is 23 h or 25 h of wall-clock, so the fractional day
+count drifts. Given the project's strong DST emphasis (`@date-fns/tz`), the wording is
+misleading. (Compounds with WR-02.)
 **Fix:** Rename the doc to "elapsed days (UTC ms / 86.4M)" or compute calendar days via the
-TZ layer if calendar semantics are actually wanted downstream.
+TZ layer if calendar semantics are wanted downstream.
 
-### IN-03: `medianIntervalMinutes` re-walks deltas already available in `intervalHoursFor`
+### IN-03: No fixture covers the `net === 0` mixed interval (import == export, both nonzero)
 
-**File:** `src/domain/simulate.ts:100-107`
-**Issue:** `intervalHoursFor` already computes `deltasMs` and a `medianMs`; the separate
-`medianIntervalMinutes` recomputes the same sorted-median from scratch a few lines later.
-Minor duplicate work and a second place to keep in sync (subsumed by WR-05).
-**Fix:** Return the median (or `deltasMs`) from `intervalHoursFor` and derive the
-coarse-cadence minutes from it.
-
-### IN-04: `datasheetUrl` reachability is asserted by type doc but only format-checked
-
-**File:** `src/domain/types.ts:212-213`, `tests/catalog.test.ts:38`
-**Issue:** The `BatteryConfig` doc says `datasheetUrl is a reachable HTTPS URL`, and the
-test only checks `^https?://` (which also permits plain `http`). The Victron entry points at
-a wiki landing page (`victronenergy.com/live/ess:start`) rather than a spec sheet. Not a code
-defect, but the "cited source" guarantee (BATT-01) is weaker than the doc implies, and an
-`http://` URL would pass the regex despite the doc saying HTTPS.
-**Fix:** Tighten the test regex to `^https://` and, if feasible, point Victron at a concrete
-spec PDF. Reachability cannot be checked offline — soften the doc wording to "HTTPS URL
-citing the spec source."
+**File:** `tests/simulate.test.ts` (all fixtures)
+**Issue:** When `gridImportKwh === gridExportKwh > 0`, `net === 0` and neither dispatch
+branch runs (`simulate.ts:208,219`). The residuals correctly fall through to the raw
+`s.gridImportKwh`/`s.gridExportKwh` initializers (`simulate.ts:205-206`) and nothing is
+charged/discharged — behavior is correct and conservation holds — but it is the one
+mixed-interval shape the new CR-01 fixtures do not exercise. Low risk; current behavior is
+right.
+**Fix:** Add a one-row `sample(T1, 2, 2)` fixture asserting `charged === 0`, `discharged
+=== 0`, `residualImport === 2`, `residualExport === 2` to lock the fall-through.
 
 ---
 
-_Reviewed: 2026-06-09T00:00:00Z_
+_Reviewed: 2026-06-09T22:49:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
