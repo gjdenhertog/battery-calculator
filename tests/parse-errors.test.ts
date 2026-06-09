@@ -41,6 +41,18 @@ describe('parseFile() — malformed row produces ParseRowError', () => {
     await expect(parseFile(makeFile(csv, 'bad-data.csv'))).rejects.toBeInstanceOf(ParseRowError)
   })
 
+  it('rejects a partial-garbage number rather than silently truncating it (WR-01, D-06)', async () => {
+    // parseFloat('100abc') → 100 would accept a corrupted cell; fail-fast must reject.
+    const csv = [
+      'time,Import T1 kWh,Import T2 kWh,Export T1 kWh,Export T2 kWh',
+      '2026-01-15 00:00,8354.000,4651.000,3095.000,7482.000',
+      '2026-01-15 00:15,8354.5xyz,4651.000,3095.000,7482.000',
+    ].join('\n')
+    await expect(parseFile(makeFile(csv, 'partial-garbage.csv'))).rejects.toBeInstanceOf(
+      ParseRowError,
+    )
+  })
+
   it('ParseRowError exposes fileName (DATA-09)', async () => {
     const csv = [
       'time,Import T1 kWh,Import T2 kWh,Export T1 kWh,Export T2 kWh',

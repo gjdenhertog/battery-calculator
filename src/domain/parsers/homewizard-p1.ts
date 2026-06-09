@@ -40,6 +40,7 @@ const REQUIRED_HEADERS = [
 interface ParsedRow {
   rowNumber: number
   timestamp: Date
+  localHour: number
   importT1: number
   importT2: number
   exportT1: number
@@ -52,11 +53,12 @@ interface ParsedRow {
 
 function parseKwh(raw: string, col: string, fileName: string, rowNum: number): number {
   const normalized = raw.trim().replace(',', '.')
-  const val = parseFloat(normalized)
-  if (isNaN(val)) {
+  // D-06 fail-fast: reject the whole token, not just a leading numeric prefix.
+  // parseFloat('100abc') → 100 would silently accept corrupted cells.
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(normalized)) {
     throw new ParseRowError(fileName, rowNum, col, 'non-negative number', raw)
   }
-  return val
+  return Number(normalized)
 }
 
 // ---------------------------------------------------------------------------
@@ -67,24 +69,62 @@ function parseKwh(raw: string, col: string, fileName: string, rowNum: number): n
 //   "YYYY-MM-DD"        — daily export (treated as midnight Amsterdam time)
 // ---------------------------------------------------------------------------
 
-function parseLocalTimestamp(raw: string, fileName: string, rowNum: number): Date {
+function parseLocalTimestamp(
+  raw: string,
+  fileName: string,
+  rowNum: number,
+): { timestamp: Date; localHour: number } {
   const trimmed = raw.trim()
 
   // Try "YYYY-MM-DD HH:MM" first
   const fullMatch = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(trimmed)
   if (fullMatch) {
     const [, yr, mo, dy, hr, mn] = fullMatch.map(Number)
-    return new Date(new TZDate(yr, mo - 1, dy, hr, mn, 'Europe/Amsterdam').getTime())
+    return {
+      timestamp: new Date(new TZDate(yr, mo - 1, dy, hr, mn, 'Europe/Amsterdam').getTime()),
+      localHour: hr,
+    }
   }
 
   // Try "YYYY-MM-DD" (daily granularity — midnight Amsterdam time)
   const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
   if (dateMatch) {
     const [, yr, mo, dy] = dateMatch.map(Number)
-    return new Date(new TZDate(yr, mo - 1, dy, 0, 0, 'Europe/Amsterdam').getTime())
+    return {
+      timestamp: new Date(new TZDate(yr, mo - 1, dy, 0, 0, 'Europe/Amsterdam').getTime()),
+      localHour: 0,
+    }
   }
 
   throw new ParseRowError(fileName, rowNum, 'time', 'YYYY-MM-DD HH:MM or YYYY-MM-DD', raw)
+}
+
+// ---------------------------------------------------------------------------
+// Fall-back DST disambiguation (D-04, fixes CR-01)
+//
+// On the October fall-back day the local clock runs 02:00–02:59 twice — once
+// at UTC+2 (CEST) and once at UTC+1 (CET). `new TZDate(y, m, d, 2, mn, …)`
+// resolves the ambiguous wall-clock time to the FIRST (CEST) instant for both
+// passes, collapsing the second pass onto duplicate UTC values — which
+// mergeFiles()'s Map then silently drops (4 intervals of real energy lost).
+//
+// Rows arrive in file order with non-decreasing cumulative meter readings, so a
+// 02:xx row whose UTC instant is not strictly after the previous row is the
+// second (CET) pass. Shift it +1h so every interval keeps a distinct UTC
+// timestamp. Gated on localHour === 2 (the only repeated Amsterdam hour) so
+// unrelated duplicate timestamps are never silently rewritten.
+// ---------------------------------------------------------------------------
+
+function disambiguateFallBackHour(parsed: ParsedRow[]): void {
+  const HOUR_MS = 3_600_000
+  for (let i = 1; i < parsed.length; i++) {
+    if (
+      parsed[i].localHour === 2 &&
+      parsed[i].timestamp.getTime() <= parsed[i - 1].timestamp.getTime()
+    ) {
+      parsed[i].timestamp = new Date(parsed[i].timestamp.getTime() + HOUR_MS)
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -133,15 +173,21 @@ const HomeWizardP1Parser: CsvParser = {
     // Step 1: Parse all rows into typed objects.
     const parsed: ParsedRow[] = rows.map((row, i) => {
       const rowNumber = i + 2 // 1-indexed; header is row 1
+      const ts = parseLocalTimestamp(row['time'], fileName, rowNumber)
       return {
         rowNumber,
-        timestamp: parseLocalTimestamp(row['time'], fileName, rowNumber),
+        timestamp: ts.timestamp,
+        localHour: ts.localHour,
         importT1: parseKwh(row['Import T1 kWh'], 'Import T1 kWh', fileName, rowNumber),
         importT2: parseKwh(row['Import T2 kWh'], 'Import T2 kWh', fileName, rowNumber),
         exportT1: parseKwh(row['Export T1 kWh'], 'Export T1 kWh', fileName, rowNumber),
         exportT2: parseKwh(row['Export T2 kWh'], 'Export T2 kWh', fileName, rowNumber),
       }
     })
+
+    // Step 1b: Resolve the fall-back ambiguous 02:xx hour to distinct UTC
+    // instants so no interval is later collapsed by mergeFiles() (D-04, CR-01).
+    disambiguateFallBackHour(parsed)
 
     // Step 2–4: Cumulative → delta conversion, starting from index 1.
     const samples: IntervalSample[] = []

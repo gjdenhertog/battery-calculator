@@ -14,6 +14,7 @@
  * Never fabricates data — only counts and reports (D-05).
  */
 import { TZDate } from '@date-fns/tz'
+import { addDays } from 'date-fns'
 import type { IntervalSample } from './types'
 
 const AMSTERDAM = 'Europe/Amsterdam'
@@ -36,57 +37,57 @@ export function detectGaps(
   // Build set of actual UTC ms values present in the series
   const actual = new Set(samples.map((s) => s.timestamp.getTime()))
 
-  // Generate expected slots by walking in local Amsterdam time.
-  // Using TZDate ensures the spring-forward gap (02:00–02:59 local) never
-  // appears in the expected set, and both fall-back slots produce distinct
-  // UTC values that are both expected.
+  // Generate expected slots by walking in LOCAL Amsterdam time.
+  //
+  // Sub-day cadences (15/30/60 min) divide evenly into the DST shift, so a
+  // fixed UTC-ms step lands on the correct local slots and naturally skips the
+  // nonexistent spring-forward hour. Daily cadence is NOT a fixed ms amount
+  // across DST (a local day is 23h/24h/25h), so it must step by local calendar
+  // day via addDays() on a TZDate — otherwise the walk drifts an hour at each
+  // transition (overshoot → early loop exit in spring; phantom slot in fall).
   const intervalMs = cadenceMinutes * 60 * 1000
+  const isDaily = cadenceMinutes >= 1440
+  const dayStep = isDaily ? Math.max(1, Math.round(cadenceMinutes / 1440)) : 0
   const firstUtcMs = samples[0].timestamp.getTime()
   const lastUtcMs = samples[samples.length - 1].timestamp.getTime()
 
-  // Convert first UTC timestamp to a TZDate in Amsterdam to start the walk
-  const firstTzDate = new TZDate(firstUtcMs, AMSTERDAM)
-
   const expectedSlots: number[] = []
-  let current = firstTzDate
+  let current = new TZDate(firstUtcMs, AMSTERDAM)
 
-  // Walk forward by adding cadenceMinutes to the local TZDate.
-  // TZDate arithmetic respects DST: adding minutes in local time naturally
-  // skips the nonexistent spring-forward hour and handles the repeated
-  // fall-back hour correctly (both produce different UTC values).
   while (current.getTime() <= lastUtcMs) {
     expectedSlots.push(current.getTime())
-    // Advance by cadence in UTC ms (uniform step), then re-wrap into TZDate
-    // to stay in local time context for DST boundary detection.
-    current = new TZDate(current.getTime() + intervalMs, AMSTERDAM)
+    current = isDaily
+      ? addDays(current, dayStep) // local-calendar step → DST-correct for daily
+      : new TZDate(current.getTime() + intervalMs, AMSTERDAM)
   }
 
-  // Find missing slots (expected but not in actual)
-  const missing = expectedSlots.filter((ts) => !actual.has(ts))
+  // Missing = expected slots absent from the actual series.
+  const missingSet = new Set(expectedSlots.filter((ts) => !actual.has(ts)))
 
-  if (missing.length === 0) {
+  if (missingSet.size === 0) {
     return { count: 0, ranges: [] }
   }
 
-  // Group consecutive missing slots into contiguous ranges
+  // Group missing slots into contiguous ranges by ADJACENCY in the expected
+  // sequence (a present slot breaks a run) — independent of any fixed ms step,
+  // so it stays correct across DST and for daily cadence.
   const ranges: Array<{ from: Date; to: Date }> = []
-  let rangeStart = missing[0]
-  let rangeEnd = missing[0]
+  let runStart: number | null = null
+  let runEnd: number | null = null
 
-  for (let i = 1; i < missing.length; i++) {
-    const expected = rangeEnd + intervalMs
-    if (missing[i] === expected) {
-      // Consecutive — extend current range
-      rangeEnd = missing[i]
-    } else {
-      // Break in continuity — emit current range, start new one
-      ranges.push({ from: new Date(rangeStart), to: new Date(rangeEnd) })
-      rangeStart = missing[i]
-      rangeEnd = missing[i]
+  for (const ts of expectedSlots) {
+    if (missingSet.has(ts)) {
+      if (runStart === null) runStart = ts
+      runEnd = ts
+    } else if (runStart !== null) {
+      ranges.push({ from: new Date(runStart), to: new Date(runEnd as number) })
+      runStart = null
+      runEnd = null
     }
   }
-  // Emit final range
-  ranges.push({ from: new Date(rangeStart), to: new Date(rangeEnd) })
+  if (runStart !== null) {
+    ranges.push({ from: new Date(runStart), to: new Date(runEnd as number) })
+  }
 
-  return { count: missing.length, ranges }
+  return { count: missingSet.size, ranges }
 }

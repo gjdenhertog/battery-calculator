@@ -19,8 +19,11 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { TZDate } from '@date-fns/tz'
 import '../src/domain/parsers/homewizard-p1'
 import { ParserRegistry } from '../src/domain/parsers/registry'
+import { detectGaps } from '../src/domain/gaps'
+import type { IntervalSample } from '../src/domain/types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,6 +93,19 @@ describe('DST fall-back fixture (2026-10-25)', () => {
     expect(result.samples.length).toBe(100)
   })
 
+  it('produces 100 DISTINCT UTC timestamps (no fall-back collision — D-04, CR-01)', () => {
+    const result = parseFixture('homewizard-fall-2026-10-25.csv')
+    // The ambiguous 02:00–02:59 hour runs twice; both passes must map to
+    // distinct UTC instants so mergeFiles() does not silently drop 4 intervals.
+    const distinct = new Set(result.samples.map(s => s.timestamp.getTime()))
+    expect(distinct.size).toBe(100)
+  })
+
+  it('detectGaps reports zero gaps for the complete fall-back series (DATA-11)', () => {
+    const result = parseFixture('homewizard-fall-2026-10-25.csv')
+    expect(detectGaps(result.samples, result.cadenceMinutes).count).toBe(0)
+  })
+
   it('all fall fixture samples have non-negative values (DATA-06)', () => {
     const result = parseFixture('homewizard-fall-2026-10-25.csv')
     for (const s of result.samples) {
@@ -121,5 +137,46 @@ describe('Real HomeWizard 15-min fixture', () => {
       expect(s.gridImportKwh).toBeGreaterThanOrEqual(0)
       expect(s.gridExportKwh).toBeGreaterThanOrEqual(0)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Daily-cadence gap detection across DST (CR-02)
+//
+// A local day is 23h/24h/25h across the transitions, so detectGaps must step
+// by local calendar day — not a fixed 24h of UTC ms — or it drifts an hour and
+// fabricates/misses slots. Builds a complete daily series (local midnight each
+// day) spanning each transition and asserts zero gaps.
+// ---------------------------------------------------------------------------
+
+function dailySeries(year: number, month1: number, startDay: number, days: number): IntervalSample[] {
+  const out: IntervalSample[] = []
+  for (let d = 0; d < days; d++) {
+    // Local midnight Amsterdam for each successive calendar day.
+    const utcMs = new TZDate(year, month1 - 1, startDay + d, 0, 0, 'Europe/Amsterdam').getTime()
+    out.push({ timestamp: new Date(utcMs), gridImportKwh: 1, gridExportKwh: 0 })
+  }
+  return out
+}
+
+describe('detectGaps daily cadence across DST (CR-02)', () => {
+  it('reports zero gaps across the spring-forward transition (23h day)', () => {
+    // 2026-03-29 is the 23-hour day.
+    const series = dailySeries(2026, 3, 27, 5) // 27,28,29,30,31
+    expect(detectGaps(series, 1440).count).toBe(0)
+  })
+
+  it('reports zero gaps across the fall-back transition (25h day)', () => {
+    // 2026-10-25 is the 25-hour day.
+    const series = dailySeries(2026, 10, 23, 5) // 23,24,25,26,27
+    expect(detectGaps(series, 1440).count).toBe(0)
+  })
+
+  it('detects a genuinely missing day in a daily series spanning DST', () => {
+    const full = dailySeries(2026, 3, 27, 5)
+    const withHole = [...full.slice(0, 2), ...full.slice(3)] // drop 2026-03-29
+    const result = detectGaps(withHole, 1440)
+    expect(result.count).toBe(1)
+    expect(result.ranges).toHaveLength(1)
   })
 })

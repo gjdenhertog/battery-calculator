@@ -37,6 +37,12 @@ function setState(region: HTMLElement, state: DropZoneState): void {
   region.classList.add(`drop-zone--${state}`)
 }
 
+// Single CSV filter shared by the drop and file-picker paths (WR-05) so both
+// entry points behave identically — a non-CSV file is ignored either way.
+function filterCsvFiles(files: File[]): File[] {
+  return files.filter((f) => f.name.endsWith('.csv') || f.type === 'text/csv')
+}
+
 // ---------------------------------------------------------------------------
 // Status/error paragraph management
 // ---------------------------------------------------------------------------
@@ -204,7 +210,7 @@ export function initDropZone(region: HTMLElement): void {
     clearStatusAndError(region)
 
     const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : []
-    const csvFiles = files.filter((f) => f.name.endsWith('.csv') || f.type === 'text/csv')
+    const csvFiles = filterCsvFiles(files)
     if (csvFiles.length === 0) return
 
     // Fire and forget — errors are caught inside processFiles
@@ -215,9 +221,10 @@ export function initDropZone(region: HTMLElement): void {
 
   fileInput.addEventListener('change', () => {
     if (!fileInput.files || fileInput.files.length === 0) return
-    const files = Array.from(fileInput.files)
+    const csvFiles = filterCsvFiles(Array.from(fileInput.files))
     // Reset the input so the same file can be re-selected later
     fileInput.value = ''
-    void processFiles(files, region)
+    if (csvFiles.length === 0) return
+    void processFiles(csvFiles, region)
   })
 }
