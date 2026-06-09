@@ -13,7 +13,7 @@ A vertical-but-deliberately-horizontal build of an NL home battery sizing tool. 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green (completed 2026-06-07)
-- [ ] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing
+- [x] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing (completed 2026-06-09)
 - [ ] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support
 - [ ] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns
 - [ ] **Phase 5: Visualizations, Polish, Transparent-Assumptions UI** - Monthly self-consumption bars + sample-week step-line flow chart; assumptions panel; "no euros" explainer; Dutch copy pass; mobile layout; honest terminology audit
@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 02-01-PLAN.md — Deps + CSP worker-src + IntervalSample contract + parser registry + DST fixtures
 - [x] 02-02-PLAN.md — Encoding fallback + HomeWizard P1 adapter + parseFile orchestrator (worker:true) + DST/error tests
 - [x] 02-03-PLAN.md — Finer-wins merge + DST-aware gap detection + pure period filter
-- [ ] 02-04-PLAN.md — Minimal drop-zone UI + sanity readout + main.ts wiring + live human-verify
+- [x] 02-04-PLAN.md — Minimal drop-zone UI + sanity readout + main.ts wiring + live human-verify
 **Research flag**: This phase needs a real HomeWizard P1 CSV sample during `/gsd:plan-phase` to confirm exact column names, unit conventions, and the cumulative-vs-15-min-delta column choice before the concrete adapter is written. Also needs the encoding-fallback decision (UTF-8 → Windows-1252).
 
 ### Phase 3: Battery Simulator and Curated Catalog
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
-| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 3/4 | In Progress|  |
+| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |

@@ -23,7 +23,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Data Ingestion (DATA)
 
-- [ ] **DATA-01**: User can drop one or more files onto a drop zone (drag-and-drop) and also pick files via a button (file-picker fallback always visible)
+- [x] **DATA-01**: User can drop one or more files onto a drop zone (drag-and-drop) and also pick files via a button (file-picker fallback always visible)
 - [ ] **DATA-02**: The app auto-detects the source format of each uploaded CSV via a parser-registry pattern; v1 ships with at least one concrete parser (HomeWizard P1 export)
 - [x] **DATA-03**: Adding a new format in the future is a single-file change (a new parser registered via import side-effect — no central switch statement to edit)
 - [ ] **DATA-04**: Parsing handles NL CSV variants: UTF-8 with optional BOM, `;` delimiter, decimal comma, DD-MM-YYYY date format
@@ -33,7 +33,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **DATA-08**: DST transitions are handled correctly — a CSV crossing 2026-03-29 yields 92 intervals for that day; a CSV crossing 2026-10-25 yields 100 intervals; both are covered by CI fixtures
 - [x] **DATA-09**: A specific parse error names the file, row, column, and what was expected (no generic "failed to parse")
 - [ ] **DATA-10**: When two uploaded files cover the same timestamp, the data point from the file with the finer interval resolution wins
-- [ ] **DATA-11**: After parse + merge, the user sees a sanity readout: file count, total rows, date range, total import kWh, total export kWh, count of any gaps detected
+- [x] **DATA-11**: After parse + merge, the user sees a sanity readout: file count, total rows, date range, total import kWh, total export kWh, count of any gaps detected
 - [ ] **DATA-12**: User can narrow the analysis to a sub-period of the merged data (defaults to the full range)
 - [x] **DATA-13**: CSV parsing runs off the main thread (PapaParse `worker: true`) so dropping a large file never freezes the UI
 
@@ -161,7 +161,7 @@ Each v1 requirement maps to exactly one phase. No orphans, no duplicates.
 | PRIV-01 | Phase 1 | Complete |
 | PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Complete |
-| DATA-01 | Phase 2 | Pending |
+| DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Complete |
 | DATA-04 | Phase 2 | Pending |
@@ -171,7 +171,7 @@ Each v1 requirement maps to exactly one phase. No orphans, no duplicates.
 | DATA-08 | Phase 2 | Complete |
 | DATA-09 | Phase 2 | Complete |
 | DATA-10 | Phase 2 | Pending |
-| DATA-11 | Phase 2 | Pending |
+| DATA-11 | Phase 2 | Complete |
 | DATA-12 | Phase 2 | Pending |
 | DATA-13 | Phase 2 | Complete |
 | BATT-01 | Phase 3 | Pending |
