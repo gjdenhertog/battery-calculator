@@ -170,3 +170,122 @@ export class UnsupportedEncodingError extends Error {
     this.name = 'UnsupportedEncodingError'
   }
 }
+
+// ---------------------------------------------------------------------------
+// Phase 3: Battery simulator contracts (D-01, D-08, BATT-01..03)
+// ---------------------------------------------------------------------------
+
+/**
+ * Physical specification of a single battery model (BATT-01..03, D-08).
+ *
+ * Invariants:
+ * - nominalCapacityKwh > 0.
+ * - dodFraction is in (0, 1]: 1.0 when the vendor quotes "usable" capacity
+ *   (Sessy, Tesla, Huawei) — do NOT double-discount (D-08 Pitfall 2).
+ * - roundTripEfficiency is in (0, 1]: sqrt() is applied each way by the
+ *   simulator so charge and discharge each bear sqrt(rte) loss (SIM-03).
+ * - maxChargeKw and maxDischargeKw > 0: power limits clamp energy per interval.
+ * - datasheetUrl is a reachable HTTPS URL citing the source of the specs (BATT-01).
+ */
+export interface BatteryConfig {
+  /** Unique machine-readable identifier (e.g. "sessy-5") */
+  id: string
+  /** Human-readable product name (e.g. "Sessy 5 kWh") */
+  name: string
+  /** Nominal (rated) capacity in kWh. Usable = nominalCapacityKwh × dodFraction */
+  nominalCapacityKwh: number
+  /**
+   * Depth-of-discharge fraction in (0, 1].
+   * Set to 1.0 when the vendor quotes "usable" capacity (D-08): do NOT
+   * double-discount by also applying a < 1 dodFraction on top.
+   */
+  dodFraction: number
+  /**
+   * Round-trip efficiency in (0, 1].
+   * sqrt() applied each way: chargeEff = dischargeEff = sqrt(roundTripEfficiency) (SIM-03).
+   */
+  roundTripEfficiency: number
+  /** Maximum charge power in kW (grid/solar → battery). Clamps kWh per interval. */
+  maxChargeKw: number
+  /** Maximum discharge power in kW (battery → loads). Clamps kWh per interval. */
+  maxDischargeKw: number
+  /** HTTPS URL to the product datasheet or spec page (BATT-01: cited in source) */
+  datasheetUrl: string
+}
+
+/**
+ * Per-interval simulation trace row (D-01).
+ *
+ * Invariants:
+ * - timestamp is a UTC Date marking the END of the interval (DATA-07 convention).
+ * - socKwh >= 0 and socKwh <= nominalCapacityKwh × dodFraction.
+ * - chargedKwh is grid-side (i.e. before efficiency loss going into the cell).
+ *   This matches criterion 2: a 2.2 kW charger over a 0.25 h slot charges 0.55 kWh
+ *   from the grid perspective, even if less lands in the cell (A-1).
+ * - residualImportKwh and residualExportKwh >= 0 (DATA-06 convention carried through).
+ */
+export interface TraceRow {
+  /** UTC Date — the end of the interval (DATA-07 convention) */
+  timestamp: Date
+  /** State of charge at the end of this interval in kWh (cell-side) */
+  socKwh: number
+  /**
+   * Energy charged from the grid/solar into the battery this interval in kWh (grid-side, A-1).
+   * A 2.2 kW charger × 0.25 h = 0.55 kWh grid-side (criterion 2).
+   */
+  chargedKwh: number
+  /** Energy discharged from the battery to loads this interval in kWh (grid-side) */
+  dischargedKwh: number
+  /** Residual grid import after battery discharge this interval in kWh (>= 0, DATA-06) */
+  residualImportKwh: number
+  /** Residual solar export after battery charge this interval in kWh (>= 0, DATA-06) */
+  residualExportKwh: number
+}
+
+/**
+ * Summary result of simulating one battery over the full series (D-01).
+ *
+ * Invariants:
+ * - shiftedKwh >= 0: total energy the battery moved from grid-import to self-consumption.
+ * - residualImportKwh + residualExportKwh are the "what would remain" totals.
+ * - totalImportKwh / totalExportKwh are the unmodified sums from the input series
+ *   (useful for computing self-consumption % in the UI).
+ * - coarseCadenceWarning = true when the dominant interval exceeds the threshold (D-04):
+ *   daily or hourly data cannot resolve a midday solar peak, making the result optimistic.
+ * - trace[] is the per-interval breakdown; aligns 1:1 with the input IntervalSample[].
+ */
+export interface SimResult {
+  /** Total kWh shifted from grid import to self-consumption by the battery */
+  shiftedKwh: number
+  /** Total residual grid import over the period in kWh */
+  residualImportKwh: number
+  /** Total residual solar export (feed-in) over the period in kWh */
+  residualExportKwh: number
+  /** Total grid import from the input series in kWh (no battery; baseline) */
+  totalImportKwh: number
+  /** Total solar export from the input series in kWh (no battery; baseline) */
+  totalExportKwh: number
+  /** Number of calendar days covered by the simulation period */
+  periodDays: number
+  /**
+   * True when the dominant interval cadence exceeds the coarse threshold (D-04).
+   * Hourly or daily data cannot resolve intra-hour solar peaks; the result will
+   * be optimistically high. Default threshold: 60 minutes (see SimOptions).
+   */
+  coarseCadenceWarning: boolean
+  /** Per-interval trace rows aligned 1:1 with the input IntervalSample array */
+  trace: TraceRow[]
+}
+
+/**
+ * Options to tune the battery simulation (D-04).
+ *
+ * All fields are optional; the simulator applies documented defaults.
+ */
+export interface SimOptions {
+  /**
+   * Cadence threshold in minutes above which coarseCadenceWarning is set to true (D-04).
+   * Default: 60 minutes (hourly or coarser data triggers the warning).
+   */
+  coarseCadenceThresholdMinutes?: number
+}
