@@ -50,8 +50,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   7. A new parser format can be added by creating one file under `src/domain/parsers/` and registering it by import side-effect, with zero edits to a central switch statement (verified by code review + a noop second-parser stub that exercises the registry).
 **Plans**: 4 plans
 - [x] 02-01-PLAN.md — Deps + CSP worker-src + IntervalSample contract + parser registry + DST fixtures
-- [ ] 02-02-PLAN.md — Encoding fallback + HomeWizard P1 adapter + parseFile orchestrator (worker:true) + DST/error tests
-- [ ] 02-03-PLAN.md — Finer-wins merge + DST-aware gap detection + pure period filter
+- [x] 02-02-PLAN.md — Encoding fallback + HomeWizard P1 adapter + parseFile orchestrator (worker:true) + DST/error tests
+- [x] 02-03-PLAN.md — Finer-wins merge + DST-aware gap detection + pure period filter
 - [ ] 02-04-PLAN.md — Minimal drop-zone UI + sanity readout + main.ts wiring + live human-verify
 **Research flag**: This phase needs a real HomeWizard P1 CSV sample during `/gsd:plan-phase` to confirm exact column names, unit conventions, and the cumulative-vs-15-min-delta column choice before the concrete adapter is written. Also needs the encoding-fallback decision (UTF-8 → Windows-1252).
 
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
-| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 1/4 | In Progress|  |
+| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 3/4 | In Progress|  |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
