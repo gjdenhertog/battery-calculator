@@ -97,6 +97,14 @@ function buildSummaryGroup(result: MergeResult): HTMLElement {
 // Per-file group (D-08)
 // ---------------------------------------------------------------------------
 
+// Human-readable Dutch cadence label for any detected interval, so a daily or
+// hourly export is not mislabelled "15 minuten" (IN-04).
+function formatCadence(min: number): string {
+  if (min >= 1440) return 'Dag'
+  if (min === 60) return 'Uur'
+  return `${min} minuten`
+}
+
 function buildFileGroup(stat: FileStat): HTMLElement {
   const group = document.createElement('div')
   group.className = 'readout-group'
@@ -106,8 +114,8 @@ function buildFileGroup(stat: FileStat): HTMLElement {
   // Bestand — file name (user-derived: textContent only)
   appendField(dl, 'Bestand', stat.fileName)
 
-  // Resolutie — detected cadence
-  appendField(dl, 'Resolutie', stat.cadenceMinutes === 60 ? 'Uur' : '15 minuten')
+  // Resolutie — detected cadence (correct label for any cadence, not just 15/60)
+  appendField(dl, 'Resolutie', formatCadence(stat.cadenceMinutes))
 
   // Type meting — series type
   appendField(dl, 'Type meting', stat.seriesType === 'cumulative' ? 'Cumulatief' : 'Interval')

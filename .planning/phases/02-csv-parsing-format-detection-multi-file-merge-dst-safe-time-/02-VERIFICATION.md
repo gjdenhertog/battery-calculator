@@ -62,7 +62,7 @@ None — all roadmap success criteria are covered in this phase.
 | `src/styles/drop-zone.css` | State classes + readout layout | ✓ VERIFIED | `drop-zone--dragover` class present; file-picker-label 44px; no hardcoded colors except single dragover tint |
 | `tests/fixtures/homewizard-spring-2026-03-29.csv` | Spring DST fixture (92 intervals) | ✓ VERIFIED | File exists; no `2026-03-29 02:` timestamps (grep confirms 0 matches) |
 | `tests/fixtures/homewizard-fall-2026-10-25.csv` | Fall DST fixture (100 intervals) | ✓ VERIFIED | File exists; contains two `02:xx` blocks (8 rows with `02:xx` timestamps confirmed) |
-| `tests/fixtures/homewizard-real-sample.csv` | Real HomeWizard P1 export | ✓ VERIFIED | File present (daily granularity, 366 rows, 2025) |
+| `tests/fixtures/homewizard-real-sample-15-minutes.csv` | Real HomeWizard P1 export (canonical) | ✓ VERIFIED | File present (15-min granularity, 3072 rows, 2026-05). Daily `homewizard-real-sample.csv` was an accidental upload and removed; 15-min is the canonical real fixture. |
 
 ### Key Link Verification
 
