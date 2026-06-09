@@ -68,7 +68,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. A custom battery config built from the same five fields runs through `simulate()` identically to a catalog entry; `runComparison(samples, batteries, options)` over a mixed [catalog, catalog, custom] array returns one `SimResult` per battery in input order.
 **Plans**: 3 plans
 - [x] 03-01-PLAN.md — Extend types.ts (BatteryConfig/SimResult/TraceRow/SimOptions) + 7-entry NL catalog + catalog test (BATT-01..03)
-- [ ] 03-02-PLAN.md — Pure simulate() dispatch engine + intervalHoursFor() + hand-computed fixture suite (SIM-01..05, BATT-04, D-04..07)
+- [x] 03-02-PLAN.md — Pure simulate() dispatch engine + intervalHoursFor() + hand-computed fixture suite (SIM-01..05, BATT-04, D-04..07)
 - [ ] 03-03-PLAN.md — runComparison() order-preserving aggregator + mixed catalog/custom test (SIM-06, BATT-05)
 
 ### Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State
@@ -108,6 +108,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
-| 3. Battery Simulator and Curated Catalog | 1/3 | In Progress|  |
+| 3. Battery Simulator and Curated Catalog | 2/3 | In Progress|  |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
