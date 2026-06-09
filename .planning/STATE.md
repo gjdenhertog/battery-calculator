@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-06-08T19:19:18.251Z"
-last_activity: 2026-06-08 -- Phase 02 planning complete
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-06-09T07:28:29.044Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
   percent: 20
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-25)
 
 **Core value:** The user uploads their own real CSV data and gets back a clear, honest comparison of which battery size makes sense for their house — without sending any data anywhere.
-**Current focus:** Phase 2 — csv parsing, format detection, multi file merge, dst safe time series
+**Current focus:** Phase 02 — csv-parsing-format-detection-multi-file-merge-dst-safe-time-
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (csv-parsing-format-detection-multi-file-merge-dst-safe-time-) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-08 -- Phase 02 planning complete
+Last activity: 2026-06-09
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 01 P01 | 267 | 3 tasks | 16 files |
 | Phase 01 P02 | 158 | 2 tasks | 2 files |
+| Phase 02 P01 | 90 | 4 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,10 @@ Recent decisions affecting current work:
 - [Phase ?]: TypeScript pinned to ~5.6 (5.6.3 installed) against npm latest 6.0.3 per CLAUDE.md lock
 - [Phase ?]: CSP test comment pitfall
 - [Phase ?]: Shell test pattern: call source function
+- [Phase ?]: CSP Option A chosen: worker-src blob: added; connect-src none unchanged
+- [Phase ?]: Real HomeWizard P1 export is daily granularity (one row/day); adapter (02-02) must detect cadenceMinutes from actual row deltas, not assume 15-min
+- [Phase ?]: Real HomeWizard P1 header has 3 extra trailing columns (L1/L2/L3 max W); HomeWizard adapter must tolerate extra columns beyond core 5
+- [Phase ?]: ParserRegistry uses clearForTesting sentinel to prevent cross-test singleton pollution in Vitest node env
 
 ### Pending Todos
 
@@ -102,6 +107,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T15:23:02.904Z
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: .planning/phases/02-csv-parsing-format-detection-multi-file-merge-dst-safe-time-/02-UI-SPEC.md
+Last session: 2026-06-09T07:28:29.037Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. Parsing a large file (50k+ rows) does not freeze the UI — PapaParse runs with `worker: true`, and a deliberate parse error names the file, row, column, and expected format (never a generic "failed to parse").
   7. A new parser format can be added by creating one file under `src/domain/parsers/` and registering it by import side-effect, with zero edits to a central switch statement (verified by code review + a noop second-parser stub that exercises the registry).
 **Plans**: 4 plans
-- [ ] 02-01-PLAN.md — Deps + CSP worker-src + IntervalSample contract + parser registry + DST fixtures
+- [x] 02-01-PLAN.md — Deps + CSP worker-src + IntervalSample contract + parser registry + DST fixtures
 - [ ] 02-02-PLAN.md — Encoding fallback + HomeWizard P1 adapter + parseFile orchestrator (worker:true) + DST/error tests
 - [ ] 02-03-PLAN.md — Finer-wins merge + DST-aware gap detection + pure period filter
 - [ ] 02-04-PLAN.md — Minimal drop-zone UI + sanity readout + main.ts wiring + live human-verify
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
-| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 0/4 | Planned | - |
+| 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 1/4 | In Progress|  |
 | 3. Battery Simulator and Curated Catalog | 0/TBD | Not started | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
