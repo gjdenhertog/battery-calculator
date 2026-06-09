@@ -113,7 +113,7 @@ export async function parseFile(file: File): Promise<ParseFileResult> {
         }
       },
 
-      error(err) {
+      error(err: Error) {
         safeReject(new Error(`${file.name}: ${err.message}`))
       },
     })

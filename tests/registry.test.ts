@@ -44,8 +44,6 @@ describe('ParserRegistry', () => {
 
     // Both claim sentinelA; only parserFirst should be registered before parserSecond
     // We register both and confirm the first one registered is returned
-    const indexBefore = (ParserRegistry as unknown as { _registrySize?: () => number })._registrySize?.() ?? -1
-
     ParserRegistry.register(parserFirst)
     ParserRegistry.register(parserSecond)
 
