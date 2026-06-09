@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green (completed 2026-06-07)
 - [x] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing (completed 2026-06-09)
-- [x] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support (completed 2026-06-09)
+- [ ] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support (plans executed 2026-06-09; verification found 1 gap — CR-01 residual energy-conservation)
 - [ ] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns
 - [ ] **Phase 5: Visualizations, Polish, Transparent-Assumptions UI** - Monthly self-consumption bars + sample-week step-line flow chart; assumptions panel; "no euros" explainer; Dutch copy pass; mobile layout; honest terminology audit
 
@@ -108,6 +108,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
-| 3. Battery Simulator and Curated Catalog | 3/3 | Complete   | 2026-06-09 |
+| 3. Battery Simulator and Curated Catalog | 3/3 | Gaps Found | - |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 0/TBD | Not started | - |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
