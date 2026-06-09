@@ -16,14 +16,14 @@
  *          soc              = min(soc + gridSideCharge × eff, usable)   [hard cap SIM-04]
  *          chargedKwh       = gridSideCharge  [grid-side, A-1]
  *          residualExport   = gridExportKwh − gridSideCharge
- *          residualImport   = 0
+ *          residualImport   = gridImportKwh  [preserved: real import not zeroed on mixed intervals]
  *     c. net < 0 (demand/discharge):
  *          delivered        = min(−net, soc × eff, maxDischargeKw × h)
  *          soc             −= delivered / eff  [remove pre-loss energy]
  *          if soc < 0: soc = 0  [guard float underrun]
  *          dischargedKwh    = delivered
- *          residualImport   = −net − delivered
- *          residualExport   = 0
+ *          residualImport   = gridImportKwh − delivered  [net demand satisfied; real import base]
+ *          residualExport   = gridExportKwh  [preserved: real export not zeroed on mixed intervals]
  *  5. Accumulate: shiftedKwh += dischargedKwh; totals; push TraceRow.
  *  6. Compute periodDays from last.timestamp − first.timestamp (0 for empty/single).
  */
@@ -215,7 +215,7 @@ export function simulate(
       soc = Math.min(soc + intoCell, usable)  // hard cap (SIM-04)
       charged = gridSideCharge               // grid-side (A-1; criterion 2 expects 0.55)
       residualExport = s.gridExportKwh - gridSideCharge
-      residualImport = 0
+      residualImport = s.gridImportKwh  // preserve real grid draw on mixed intervals (CR-01)
     } else if (net < 0) {
       // ---- Discharge path (net demand) ----
       const demand = -net
@@ -225,8 +225,8 @@ export function simulate(
       soc -= delivered / eff  // remove the pre-loss cell energy
       if (soc < 0) soc = 0   // guard floating-point underrun
       discharged = delivered
-      residualImport = demand - delivered
-      residualExport = 0
+      residualImport = s.gridImportKwh - delivered  // real import base minus what battery covered (CR-01)
+      residualExport = s.gridExportKwh              // preserve real export on mixed intervals (CR-01)
     }
 
     totalShifted += discharged
