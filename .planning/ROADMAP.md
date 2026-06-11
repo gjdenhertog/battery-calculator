@@ -87,8 +87,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04-01-PLAN.md — Wave 0 gate: install comlink + @preact/signals-core, fix CSP worker-src 'self' blob:, Comlink sim-worker entry + contract test + build proof
 - [x] 04-02-PLAN.md — Pure presentation helpers: colorFor/colorSlotFor (COMP-04), metrics deriveMetrics/saldering framing/detectLeaders (COMP-01..05), 1-decimal formatters
 - [x] 04-03-PLAN.md — Signals store + Comlink worker singleton + generation-guarded scheduleRecompute (SIM-07/08); re-wire drop-zone to write parsedSamples + seed period defaults (DATA-12)
-- [ ] 04-04-PLAN.md — Battery spec-card picker: 7 catalog cards + Sessy 5 default, max-5 cap, inline custom battery (BATT-03/04/05, COMP-04)
-- [ ] 04-05-PLAN.md — Comparison table (OFF-led saldering pair, leaders, un-floored negative ON, disclaimer, cadence banner, stale-dim) + period control (COMP-01..08, SIM-08, DATA-12)
+- [x] 04-04-PLAN.md — Battery spec-card picker: 7 catalog cards + Sessy 5 default, max-5 cap, inline custom battery (BATT-03/04/05, COMP-04)
+- [x] 04-05-PLAN.md — Comparison table (OFF-led saldering pair, leaders, un-floored negative ON, disclaimer, cadence banner, stale-dim) + period control (COMP-01..08, SIM-08, DATA-12)
 - [ ] 04-06-PLAN.md — Wire main.ts (picker + period + table), CSS imports, re-assert worker chunk build, live human-verify end-to-end + interactivity + color
 **UI hint**: yes
 
@@ -116,5 +116,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
-| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 3/6 | In Progress|  |
+| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 5/6 | In Progress|  |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
