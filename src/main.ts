@@ -1,7 +1,15 @@
 import './styles/global.css'
 import './styles/drop-zone.css' // Phase 2: drop-zone state CSS
+import './styles/battery-picker.css' // Phase 4: battery spec-card picker
+import './styles/comparison-table.css' // Phase 4: comparison table + saldering columns
+import './styles/results-region.css' // Phase 4: results region layout + cadence banner
 import { renderShell } from './shell'
 import { initDropZone } from './ui/drop-zone'
+import { initBatteryPicker } from './ui/battery-picker'
+import { initPeriodControl } from './ui/period-control'
+import { initComparisonTable } from './ui/comparison-table'
+// app-state module self-initializes the Comlink worker singleton on import
+// (transitively pulled in by battery-picker, period-control, comparison-table)
 
 // The 3-region shell is pre-rendered in index.html for static delivery.
 // renderShell is exported from shell.ts and used by:
@@ -19,4 +27,14 @@ if (app && app.children.length === 0) {
 const dropZoneRegion = document.getElementById('drop-zone-region')
 if (dropZoneRegion) {
   initDropZone(dropZoneRegion)
+  // Battery picker mounts inside the same #drop-zone-region (D-16):
+  // the picker sits alongside the drop-zone for a combined "upload + choose battery" region.
+  initBatteryPicker(dropZoneRegion)
+}
+
+// Period control and comparison table fill #results-region:
+const resultsRegion = document.getElementById('results-region')
+if (resultsRegion) {
+  initPeriodControl(resultsRegion)
+  initComparisonTable(resultsRegion)
 }
