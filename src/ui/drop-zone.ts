@@ -17,6 +17,9 @@ import { parseFile } from '../domain/parse'
 import { mergeFiles } from '../domain/merge'
 import { ParseRowError, UnsupportedEncodingError } from '../domain/types'
 import { renderReadout } from './readout'
+import { batch } from '@preact/signals-core'
+import { parsedSamples, periodFrom, periodTo, scheduleRecompute } from '../state/app-state'
+import { fullRange } from '../domain/period-filter'
 
 // ---------------------------------------------------------------------------
 // State machine
@@ -106,7 +109,25 @@ async function processFiles(files: File[], region: HTMLElement): Promise<void> {
     // Merge all parse results into a unified series
     const mergeResult = mergeFiles(parseResults)
 
-    // Remove any prior readout and render the new one below the region
+    // D-16: write parsed samples into the reactive signal graph so
+    // the comparison engine and period control react to the new data.
+    parsedSamples.value = mergeResult.samples
+
+    // D-19: seed period defaults to the full dataset range on first upload
+    // so the period control mounts at the correct date bounds.
+    if (mergeResult.samples.length > 0) {
+      const range = fullRange(mergeResult.samples)
+      batch(() => {
+        periodFrom.value = range.start
+        periodTo.value = range.end
+      })
+    }
+
+    // Trigger an immediate recompute so the default Sessy-5 comparison renders
+    // without waiting for the user to interact with the battery picker.
+    scheduleRecompute(true)
+
+    // Remove any prior readout and render the new one below the region (D-16).
     removeExistingReadout(region)
     const readout = renderReadout(mergeResult)
     insertReadoutAfterRegion(region, readout)
@@ -118,6 +139,9 @@ async function processFiles(files: File[], region: HTMLElement): Promise<void> {
   } catch (err) {
     // Remove any stale readout from a previous successful parse
     removeExistingReadout(region)
+
+    // Clear stale samples so the comparison engine does not run on outdated data.
+    parsedSamples.value = []
 
     let message: string
     if (err instanceof ParseRowError) {
