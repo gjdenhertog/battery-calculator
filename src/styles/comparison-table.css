@@ -1,0 +1,141 @@
+/* src/styles/comparison-table.css */
+/* Comparison table, leader highlight, saldering columns, disclaimer. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* Note: base region rules live in global.css — do NOT re-declare them here. */
+
+/* ── Scroll wrapper (D-12 responsive) ────────────────────────────────────── */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Table base ──────────────────────────────────────────────────────────── */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.comparison-table th {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  font-weight: 400;
+  background-color: var(--color-surface);
+  vertical-align: bottom;
+}
+
+/* ── Column group header (kWh netto-import vermeden) ─────────────────────── */
+.col-saldering-group__header {
+  text-align: center;
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+/* ── Primary saldering column (zonder saldering) ─────────────────────────── */
+.col-primary {
+  /* No special muting — primary column is normal text weight */
+}
+
+/* ── Muted saldering column (met saldering) ──────────────────────────────── */
+.col-muted {
+  color: var(--color-text-muted);
+}
+
+/* ── Leader cell: semibold + surface tint (D-11, COMP-03) ────────────────── */
+/* Neutral highlight — separate from battery identity color */
+.table-cell--leader {
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-surface);
+}
+
+/* ── Negative saldering-ON value (D-02 — show as-is, not floored) ────────── */
+.table-cell--negative {
+  color: var(--color-destructive);
+}
+
+/* ── Battery row ─────────────────────────────────────────────────────────── */
+.battery-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+}
+
+.battery-row__label {
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+/* ── Battery color swatches (5 CSS-class slots for color — no inline style) */
+.battery-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.battery-swatch--1 { background-color: var(--color-battery-1); }
+.battery-swatch--2 { background-color: var(--color-battery-2); }
+.battery-swatch--3 { background-color: var(--color-battery-3); }
+.battery-swatch--4 { background-color: var(--color-battery-4); }
+.battery-swatch--5 { background-color: var(--color-battery-5); }
+
+/* ── Stale results dimming while worker computes (SIM-08) ────────────────── */
+.results-stale {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ── Saldering disclaimer (COMP-06 / D-14) ───────────────────────────────── */
+.saldering-disclaimer {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-md);
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-top: var(--space-sm);
+  /* max-width matches the table container */
+  max-width: 100%;
+}
+
+/* ── Saldering info button ("i") ─────────────────────────────────────────── */
+.saldering-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: var(--space-xs);
+  vertical-align: middle;
+  padding: 0;
+  line-height: 1;
+}
+
+.saldering-info-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Negative saldering note (shown below table when any ON ≤ 0) ─────────── */
+.saldering-negative-note {
+  font-size: var(--font-size-label);
+  color: var(--color-destructive);
+  margin-top: var(--space-sm);
+}

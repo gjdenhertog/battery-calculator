@@ -1,0 +1,74 @@
+/* src/styles/results-region.css */
+/* Results-region layout: banner, indicator, compute status, empty/error states, */
+/* period-narrowing control. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+
+/* ── Section heading (Analyseperiode, Resultaten) ────────────────────────── */
+.results-section-heading {
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-md);
+}
+
+/* ── Coarse-cadence warning banner (D-13) ────────────────────────────────── */
+.cadence-banner {
+  border-left: 4px solid var(--color-destructive);
+  /* destructive at 8% opacity — one-off, matches drop-zone dragover pattern */
+  background-color: rgb(220 38 38 / 0.08);
+  padding: var(--space-md);
+  border-radius: 4px;
+  margin-bottom: var(--space-md);
+}
+
+.cadence-banner__text {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Compute indicator — muted, label size (SIM-08) ──────────────────────── */
+.compute-indicator {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Empty state — muted body text ──────────────────────────────────────── */
+.results-empty {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  padding: var(--space-md);
+}
+
+/* ── Error state — destructive body text, matches drop-zone .parse-error ─── */
+.results-error {
+  font-size: var(--font-size-body);
+  color: var(--color-destructive);
+  padding: var(--space-md);
+}
+
+/* ── Period coverage indicator (COMP-08) ─────────────────────────────────── */
+.period-coverage {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Period date input ────────────────────────────────────────────────────── */
+.period-input {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  min-height: 44px; /* WCAG 2.5.5 touch target */
+}
+
+.period-input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
