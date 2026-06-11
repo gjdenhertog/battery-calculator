@@ -1,0 +1,204 @@
+/* src/styles/battery-picker.css */
+/* Battery spec-card picker styles (BATT-03, BATT-04, BATT-05, D-05, D-06). */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* Note: base region rules live in global.css — do NOT re-declare them here. */
+
+/* ── Battery picker grid ─────────────────────────────────────────────────── */
+
+.battery-picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 480px) {
+  .battery-picker {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Battery card base ───────────────────────────────────────────────────── */
+
+.battery-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-bg);
+  padding: var(--space-md);
+}
+
+/* ── Battery card states ─────────────────────────────────────────────────── */
+
+/* Selected: accent border, same background */
+.battery-card--selected {
+  border: 2px solid var(--color-accent);
+  background-color: var(--color-bg);
+}
+
+/* Disabled: surface background, muted text, cursor not-allowed */
+.battery-card--disabled {
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Battery card label (WCAG 2.5.5: min-height 44px touch target) ───────── */
+
+.battery-card__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.battery-card--disabled .battery-card__label {
+  cursor: not-allowed;
+}
+
+/* ── Battery card checkbox ───────────────────────────────────────────────── */
+
+.battery-card__checkbox {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.battery-card__checkbox:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Battery swatch — 12×12px filled circle ─────────────────────────────── */
+
+.battery-card__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Per-battery color slots (5 slots using tokens from tokens.css) ──────── */
+
+.battery-swatch--1 { background-color: var(--color-battery-1); }
+.battery-swatch--2 { background-color: var(--color-battery-2); }
+.battery-swatch--3 { background-color: var(--color-battery-3); }
+.battery-swatch--4 { background-color: var(--color-battery-4); }
+.battery-swatch--5 { background-color: var(--color-battery-5); }
+
+/* ── Battery card name ───────────────────────────────────────────────────── */
+
+.battery-card__name {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ── Spec dl layout ──────────────────────────────────────────────────────── */
+
+.battery-card__specs {
+  margin: var(--space-sm) 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+.battery-card__specs dt {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.battery-card__specs dd {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Max-5 cap note ──────────────────────────────────────────────────────── */
+
+.picker-cap-note {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: var(--space-xs) 0;
+}
+
+/* ── Custom battery card expand button (WCAG 2.5.5: min-height 44px) ─────── */
+
+.battery-card__expand {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border: none;
+  background: none;
+  font-size: var(--font-size-body);
+  color: var(--color-accent);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.battery-card__expand:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Custom battery form ─────────────────────────────────────────────────── */
+
+.custom-battery-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.custom-battery-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.custom-battery-form__label-text {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.custom-battery-form__input {
+  font-size: var(--font-size-body);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.custom-battery-form__input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Invalid input state ─────────────────────────────────────────────────── */
+
+.input--invalid {
+  border-color: var(--color-destructive);
+}
+
+/* ── Inline validation error message ────────────────────────────────────── */
+
+.input-error {
+  font-size: var(--font-size-label);
+  color: var(--color-destructive);
+}
+
+/* ── Custom battery incomplete alert ────────────────────────────────────── */
+
+.custom-battery-incomplete {
+  display: block;
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
