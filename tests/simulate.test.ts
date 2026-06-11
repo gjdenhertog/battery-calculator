@@ -38,12 +38,6 @@ function contiguous15min(startUtcMs: number, count: number): IntervalSample[] {
   return Array.from({ length: count }, (_, i) => sample(startUtcMs + i * interval))
 }
 
-/** Build a contiguous sequence of 60-min samples starting at startUtcMs */
-function contiguous60min(startUtcMs: number, count: number): IntervalSample[] {
-  const interval = 60 * 60 * 1000
-  return Array.from({ length: count }, (_, i) => sample(startUtcMs + i * interval))
-}
-
 /** Build a contiguous sequence of daily (24h) samples starting at startUtcMs */
 function contiguousDaily(startUtcMs: number, count: number): IntervalSample[] {
   const interval = 24 * 60 * 60 * 1000
