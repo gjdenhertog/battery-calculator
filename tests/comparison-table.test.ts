@@ -1,0 +1,329 @@
+// @vitest-environment jsdom
+/**
+ * tests/comparison-table.test.ts — initComparisonTable DOM-contract lock
+ * (COMP-01..08, D-02, D-08, D-11, D-12, D-13, D-14, SIM-08, T-04-13..T-04-16)
+ *
+ * Runs in the jsdom environment (per-file override via first-line docblock).
+ * Mounts the comparison table against a real jsdom DOM seeded with the Phase 1 shell.
+ *
+ * Key invariants tested:
+ * - "zonder saldering" header precedes "met saldering" in DOM order (COMP-02)
+ * - Both saldering columns are ALWAYS present simultaneously — no toggle (COMP-05)
+ * - Per-column leader gets .table-cell--leader (COMP-03, D-11)
+ * - avoidedOn ≤ 0 renders as-is with .table-cell--negative, never floored (D-02)
+ * - Saldering disclaimer hidden by default; "i" button toggles it (COMP-06)
+ * - No "/jaar" or "/maand" string in results DOM (COMP-07)
+ * - Coarse-cadence banner rendered when coarseCadenceWarning is true (D-13)
+ * - XSS: script-laden battery name yields zero <script> elements (T-04-13)
+ */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { renderShell } from '../src/shell'
+import { initComparisonTable } from '../src/ui/comparison-table'
+import { simResults, selectedBatteries, isComputing, computeError } from '../src/state/signals'
+import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
+import type { SimResult, BatteryConfig } from '../src/domain/types'
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+function makeSimResult(overrides: Partial<SimResult> = {}): SimResult {
+  return {
+    shiftedKwh: 120.5,
+    residualImportKwh: 450.2,
+    residualExportKwh: 80.1,
+    totalImportKwh: 570.7,
+    totalExportKwh: 200.3,
+    periodDays: 90,
+    coarseCadenceWarning: false,
+    trace: [],
+    ...overrides,
+  }
+}
+
+function makeBattery(overrides: Partial<BatteryConfig> = {}): BatteryConfig {
+  return {
+    id: 'sessy-5',
+    name: 'Sessy 5 kWh',
+    nominalCapacityKwh: 5,
+    dodFraction: 1.0,
+    roundTripEfficiency: 0.85,
+    maxChargeKw: 2.2,
+    maxDischargeKw: 1.7,
+    datasheetUrl: 'https://example.com',
+    ...overrides,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DOM setup
+// ---------------------------------------------------------------------------
+
+function setupResultsRegion(): HTMLElement {
+  document.body.innerHTML = '<div id="app"></div>'
+  const host = document.getElementById('app') as HTMLElement
+  renderShell(host)
+  return document.getElementById('results-region') as HTMLElement
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('initComparisonTable DOM contract', () => {
+  let container: HTMLElement
+  let dispose: (() => void) | null = null
+
+  beforeEach(() => {
+    // Reset signals to a clean state before each test
+    simResults.value = null
+    isComputing.value = false
+    computeError.value = null
+    selectedBatteries.value = [BATTERY_CATALOG[0]]
+
+    container = setupResultsRegion()
+    dispose = initComparisonTable(container)
+  })
+
+  afterEach(() => {
+    if (dispose) {
+      dispose()
+      dispose = null
+    }
+    // Clean up signals
+    simResults.value = null
+    isComputing.value = false
+    computeError.value = null
+    selectedBatteries.value = [BATTERY_CATALOG[0]]
+  })
+
+  // ── COMP-02: "zonder saldering" PRECEDES "met saldering" in DOM ────────────
+
+  it('renders "zonder saldering" header before "met saldering" in DOM order (COMP-02)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const headers = Array.from(container.querySelectorAll('th'))
+    const zonderIdx = headers.findIndex((th) => th.textContent?.includes('zonder saldering'))
+    const metIdx = headers.findIndex((th) => th.textContent?.includes('met saldering'))
+
+    expect(zonderIdx).toBeGreaterThanOrEqual(0)
+    expect(metIdx).toBeGreaterThanOrEqual(0)
+    expect(zonderIdx).toBeLessThan(metIdx)
+  })
+
+  // ── COMP-05: both saldering columns ALWAYS present simultaneously (no toggle) ──
+
+  it('shows both saldering columns simultaneously — no toggle button for column visibility (COMP-05)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const headers = container.querySelectorAll('th')
+    const headerTexts = Array.from(headers).map((th) => th.textContent ?? '')
+    expect(headerTexts.some((t) => t.includes('zonder saldering'))).toBe(true)
+    expect(headerTexts.some((t) => t.includes('met saldering'))).toBe(true)
+  })
+
+  // ── COMP-03 + D-11: per-column leader gets .table-cell--leader ─────────────
+
+  it('the battery with the highest avoidedOff has .table-cell--leader in that column (COMP-03)', () => {
+    // Two batteries: battery B has higher shiftedKwh (= avoidedOff)
+    const batteryA = makeBattery({ id: 'battery-a', name: 'Battery A', nominalCapacityKwh: 5 })
+    const batteryB = makeBattery({ id: 'battery-b', name: 'Battery B', nominalCapacityKwh: 10 })
+    const resultA = makeSimResult({ shiftedKwh: 100 })
+    const resultB = makeSimResult({ shiftedKwh: 200 })
+
+    selectedBatteries.value = [batteryA, batteryB]
+    simResults.value = [resultA, resultB]
+
+    const rows = container.querySelectorAll('.battery-row')
+    expect(rows.length).toBe(2)
+
+    // Battery B (index 1) should be the leader for avoidedOff
+    const rowB = rows[1]
+    const avoidedOffCells = rowB.querySelectorAll('[data-metric="avoidedOff"]')
+    expect(avoidedOffCells.length).toBeGreaterThan(0)
+    expect(avoidedOffCells[0].classList.contains('table-cell--leader')).toBe(true)
+  })
+
+  // ── D-02: avoidedOn ≤ 0 renders as-is with .table-cell--negative ──────────
+
+  it('renders avoidedOn ≤ 0 with .table-cell--negative and shows the actual value (D-02)', () => {
+    // Construct a result where avoidedWithSaldering is negative:
+    // baseline net = max(0, totalImport - totalExport) = max(0, 100 - 200) = 0
+    // battery net  = max(0, residualImport - residualExport) = max(0, 50 - 10) = 40
+    // avoidedOn = 0 - 40 = -40 (negative)
+    const battery = makeBattery()
+    const result = makeSimResult({
+      totalImportKwh: 100,
+      totalExportKwh: 200,
+      residualImportKwh: 50,
+      residualExportKwh: 10,
+      shiftedKwh: 50,
+    })
+
+    selectedBatteries.value = [battery]
+    simResults.value = [result]
+
+    const negativeCells = container.querySelectorAll('.table-cell--negative')
+    expect(negativeCells.length).toBeGreaterThan(0)
+
+    // The value must NOT be "0.0 kWh" — it must show the actual negative value
+    // Query td specifically (th also has data-metric="avoidedOn" for the column header)
+    const avoidedOnCell = container.querySelector('td[data-metric="avoidedOn"]')
+    expect(avoidedOnCell).not.toBeNull()
+    // The cell text should not be "0.0 kWh" (not floored)
+    expect(avoidedOnCell?.textContent).not.toBe('0.0 kWh')
+    // The cell text should contain a minus sign (U+2212 or regular -)
+    expect(avoidedOnCell?.textContent).toMatch(/[−-]/)
+  })
+
+  // ── COMP-06: disclaimer hidden by default; "i" button toggles it ──────────
+
+  it('saldering disclaimer is hidden by default (COMP-06)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const disclaimer = container.querySelector('#saldering-disclaimer') as HTMLElement | null
+    expect(disclaimer).not.toBeNull()
+    expect(disclaimer?.hidden).toBe(true)
+  })
+
+  it('clicking the "i" button removes hidden from the disclaimer (COMP-06)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const btn = container.querySelector('.saldering-info-btn') as HTMLButtonElement | null
+    expect(btn).not.toBeNull()
+
+    const disclaimer = container.querySelector('#saldering-disclaimer') as HTMLElement | null
+    expect(disclaimer?.hidden).toBe(true)
+
+    btn?.click()
+    expect(disclaimer?.hidden).toBe(false)
+    expect(btn?.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('clicking the "i" button again re-hides the disclaimer (COMP-06)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const btn = container.querySelector('.saldering-info-btn') as HTMLButtonElement | null
+    btn?.click() // open
+    btn?.click() // close
+    const disclaimer = container.querySelector('#saldering-disclaimer') as HTMLElement | null
+    expect(disclaimer?.hidden).toBe(true)
+    expect(btn?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  // ── COMP-07: no "/jaar" or "/maand" in results DOM ────────────────────────
+
+  it('container textContent contains neither "/jaar" nor "/maand" (COMP-07)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.textContent).not.toContain('/jaar')
+    expect(container.textContent).not.toContain('/maand')
+  })
+
+  // ── D-13: coarse-cadence banner present when coarseCadenceWarning is true ──
+
+  it('renders .cadence-banner above the table when coarseCadenceWarning is true (D-13)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult({ coarseCadenceWarning: true })]
+
+    const banner = container.querySelector('.cadence-banner')
+    expect(banner).not.toBeNull()
+
+    // Banner must be above (before) the table in the DOM
+    const tableWrapper = container.querySelector('.table-scroll-wrapper')
+    expect(tableWrapper).not.toBeNull()
+    if (banner && tableWrapper) {
+      const children = Array.from(container.children)
+      const bannerIdx = children.indexOf(banner as HTMLElement)
+      const tableIdx = children.indexOf(tableWrapper as HTMLElement)
+      expect(bannerIdx).toBeLessThan(tableIdx)
+    }
+  })
+
+  it('does NOT render .cadence-banner when coarseCadenceWarning is false (D-13)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult({ coarseCadenceWarning: false })]
+
+    const banner = container.querySelector('.cadence-banner')
+    expect(banner).toBeNull()
+  })
+
+  // ── T-04-13: XSS — script-laden battery name yields zero <script> elements ─
+
+  it('renders a <script>-laden battery name as inert text, not a live element (T-04-13)', () => {
+    const maliciousName = '<script>alert("xss")</script>'
+    const battery = makeBattery({ id: 'xss-battery', name: maliciousName })
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    // Must NOT create any executable <script> elements
+    expect(container.querySelectorAll('script').length).toBe(0)
+
+    // The raw string must appear as text content (inert)
+    expect(container.textContent).toContain(maliciousName)
+  })
+
+  // ── SIM-08: compute-indicator and stale class while computing ─────────────
+
+  it('shows .compute-indicator while isComputing is true (SIM-08)', () => {
+    isComputing.value = true
+
+    const indicator = container.querySelector('.compute-indicator')
+    expect(indicator).not.toBeNull()
+    expect(indicator?.textContent).toContain('Rekenen')
+  })
+
+  it('hides .compute-indicator when isComputing is false (SIM-08)', () => {
+    isComputing.value = false
+
+    const indicator = container.querySelector('.compute-indicator')
+    expect(indicator).toBeNull()
+  })
+
+  // ── Empty state ────────────────────────────────────────────────────────────
+
+  it('renders .results-empty when no batteries are selected and no results', () => {
+    selectedBatteries.value = []
+    simResults.value = null
+
+    const empty = container.querySelector('.results-empty')
+    expect(empty).not.toBeNull()
+    expect(empty?.textContent).toContain('batterij')
+  })
+
+  // ── Error state ────────────────────────────────────────────────────────────
+
+  it('renders .results-error with role="alert" when computeError is set', () => {
+    computeError.value = 'Berekening mislukt.'
+
+    const errorEl = container.querySelector('.results-error')
+    expect(errorEl).not.toBeNull()
+    expect(errorEl?.getAttribute('role')).toBe('alert')
+    expect(errorEl?.textContent).toContain('Berekening mislukt')
+  })
+
+  // ── T-04-14: no inline style assignments (grep gate asserted separately)
+
+  it('contains no element with inline style attribute (T-04-14)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const allElements = container.querySelectorAll('[style]')
+    expect(allElements.length).toBe(0)
+  })
+})
