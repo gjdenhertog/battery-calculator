@@ -35,8 +35,8 @@ describe('CSP directive contract', () => {
     expect(CSP).toContain("connect-src 'none'")
   })
 
-  it("contains worker-src blob:", () => {
-    expect(CSP).toContain("worker-src blob:")
+  it("contains worker-src 'self' blob:", () => {
+    expect(CSP).toContain("worker-src 'self' blob:")
   })
 
   it("contains base-uri 'self'", () => {
