@@ -105,7 +105,19 @@ async function _runCompute(): Promise<void> {
   const batteries = activeBatteries.value
 
   // Skip if there is nothing to simulate.
-  if (samples.length === 0 || batteries.length === 0) return
+  // Reset isComputing if it was left true by a prior in-flight call that is now
+  // superseded by this bail-only path (e.g. worker still running when user unchecks
+  // all batteries). Without this, the UI strands on "Rekenen…" if the prior call
+  // never resolves (worker crash / unhandled rejection).
+  if (samples.length === 0 || batteries.length === 0) {
+    if (isComputing.value) {
+      batch(() => {
+        isComputing.value = false
+        simResults.value = null
+      })
+    }
+    return
+  }
 
   // Capture generation before the await boundary (RESEARCH Open Q3).
   const myGen = ++_generation
