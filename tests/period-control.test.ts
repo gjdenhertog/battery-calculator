@@ -14,7 +14,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderShell } from '../src/shell'
-import { initPeriodControl } from '../src/ui/period-control'
+import { initPeriodControl, teardownPeriodControl } from '../src/ui/period-control'
 import { parsedSamples, periodFrom, periodTo } from '../src/state/signals'
 import type { IntervalSample } from '../src/domain/types'
 
@@ -64,7 +64,9 @@ describe('initPeriodControl DOM contract', () => {
   })
 
   afterEach(() => {
-    // Clean up
+    // Dispose effects accumulated by initPeriodControl (WR-02: prevent effect leaks)
+    teardownPeriodControl()
+    // Clean up signals
     parsedSamples.value = []
     periodFrom.value = null
     periodTo.value = null

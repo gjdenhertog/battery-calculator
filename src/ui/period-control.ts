@@ -61,6 +61,16 @@ function updateCoverageIndicator(el: HTMLElement, days: number): void {
 
 const _disposeFns: Array<() => void> = []
 
+/**
+ * Dispose all effects created by initPeriodControl.
+ * Call on hot-reload, routing teardown, or in test afterEach to prevent
+ * effect accumulation across repeated initPeriodControl() calls (Pitfall 3).
+ */
+export function teardownPeriodControl(): void {
+  _disposeFns.forEach((d) => d())
+  _disposeFns.length = 0
+}
+
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
