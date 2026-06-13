@@ -14,25 +14,24 @@ The user uploads their own real CSV data and gets back a clear, honest compariso
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- [x] Upload one or more energy CSV files in the browser — validated Phase 4 (drop-zone + file picker wired to the live reactive pipeline)
+- [x] Auto-detect CSV format (HomeWizard P1 export; more NL sources as samples are collected) — validated Phase 2 (parser registry + adapter), exercised end-to-end in Phase 4
+- [x] Parse import and export (feed-in) energy data into a normalized time series — validated Phase 2 (`IntervalSample[]`), live in Phase 4
+- [x] Merge multiple files; on overlapping timestamps the higher-resolution data point wins — validated Phase 2
+- [x] Default to the full period covered by the data; allow narrowing to a user-chosen sub-period — validated Phase 4 (period control, D-19 full-range default)
+- [x] Pick a battery from a curated catalog (default: Sessy 5 kWh) or provide a custom config — validated Phase 3 (catalog + `simulate`) + Phase 4 (spec-card picker, custom card)
+- [x] Select multiple batteries to compare side-by-side in one run — validated Phase 4 (max-5 picker + `runComparison`)
+- [x] Compare saldering on/off — validated Phase 4 as side-by-side "zonder/met saldering" columns (D-01/COMP-02), not a re-computing toggle, so both scenarios are visible at once
+- [x] Simulate, per battery, the energy stored during solar export and later self-consumed instead of imported — validated Phase 3 engine, surfaced in the Phase 4 UI
+- [x] Show a comparison table (self-consumption %, kWh shifted, residual grid import, residual feed-in) — validated Phase 4 (comparison table + per-row leader highlighting + marginal capture rate)
+- [x] Privacy promise: uploaded CSVs never leave the browser — validated Phase 1 CSP (`connect-src 'none'`) + Phase 4 Comlink worker (postMessage only); production re-confirm tracked in 04-HUMAN-UAT.md
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Upload one or more energy CSV files in the browser
-- [ ] Auto-detect CSV format (start with HomeWizard P1 export; more NL sources added as sample files are collected)
-- [ ] Parse import and export (feed-in) energy data into a normalized time series
-- [ ] Merge multiple files; on overlapping timestamps the higher-resolution data point wins
-- [ ] Default to the full period covered by the data; allow narrowing to a user-chosen sub-period
-- [ ] Pick a battery from a curated catalog of ~6–10 NL-popular models (default: Sessy 5 kWh) or provide a custom config (capacity kWh, max charge/discharge kW, round-trip efficiency, depth of discharge)
-- [ ] Select multiple batteries to compare side-by-side in one run
-- [ ] Toggle saldering on/off and re-compute
-- [ ] Simulate, per battery, the energy that would have been stored during solar export and later self-consumed instead of imported from the grid
-- [ ] Show a comparison table (self-consumption %, kWh shifted, residual grid import, residual feed-in)
-- [ ] Show key charts (e.g. monthly self-consumption bars, a sample-week energy flow chart)
-- [ ] Ship as static files hosted on GitHub Pages; everything runs in the user's browser
-- [ ] Privacy promise: uploaded CSVs never leave the browser
+- [ ] Show key charts (e.g. monthly self-consumption bars, a sample-week energy flow chart) — Phase 5
+- [ ] Ship as static files hosted on GitHub Pages; everything runs in the user's browser — implemented Phase 1; live-deploy reachability pending human verification (01-HUMAN-UAT.md)
 
 ### Out of Scope
 
@@ -99,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-09 after Phase 3 (Battery Simulator and Curated Catalog) complete — the bottom-up domain core is now proven by Vitest: Phase 2 shipped the DST-safe CSV→`IntervalSample[]` data layer; Phase 3 shipped the pure `simulate()` dispatch engine (capacity/power/round-trip/DoD fidelity), a 7-entry curated NL catalog (Sessy 5 default), and `runComparison()`. Verified 11/11 must-haves; the mixed-interval residual energy-conservation gap (CR-01) was caught by code review and closed in 03-04. No UI yet — Active requirements remain unvalidated (user-facing) until the Phase 4 comparison UI lands. Phase 1 live-deploy reachability still pending human verification (01-HUMAN-UAT.md).*
+*Last updated: 2026-06-13 after Phase 4 (Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State) complete — the differentiator now ships as a live UI on the proven core. Reactive signal state (@preact/signals-core), Comlink simulation Web Worker (off-main-thread `runComparison`), a battery spec-card picker (Sessy 5 default, max 5 + custom), a period-narrowing control (full-range default, no /jaar /maand extrapolation), and a comparison table with "zonder/met saldering" side-by-side columns, per-row leader highlighting, marginal capture rate, and a "Rekenen…" interactivity indicator. Verified 5/5 success criteria + 11/11 requirements (SIM-07/08, COMP-01..08, DATA-12); 290 Vitest tests green; production build emits the worker chunk. A render-race crash on multi-battery select was caught at the human-verify checkpoint and fixed; code review found 3 Critical + 4 Warning issues, all fixed (CR-01 stranded isComputing, CR-02 batch ordering, CR-03 status-node cleanup, dispose leaks, 6th swatch, zero-value coloring). Post-fix browser re-confirmation tracked in 04-HUMAN-UAT.md (accepted on regression-test strength). Phase 1 live-deploy reachability still pending human verification (01-HUMAN-UAT.md). Next: Phase 5 — charts, transparent-assumptions UI, Dutch copy pass, honest terminology audit.*
