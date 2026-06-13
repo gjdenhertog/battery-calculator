@@ -36,5 +36,9 @@ if (dropZoneRegion) {
 const resultsRegion = document.getElementById('results-region')
 if (resultsRegion) {
   initPeriodControl(resultsRegion)
-  initComparisonTable(resultsRegion)
+  // Capture the dispose function so it can be called on HMR teardown (WR-01).
+  const disposeComparisonTable = initComparisonTable(resultsRegion)
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => disposeComparisonTable())
+  }
 }
