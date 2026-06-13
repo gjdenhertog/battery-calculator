@@ -243,8 +243,10 @@ function buildBatteryRow(
   tr.appendChild(avoidedOffCell)
 
   // Column 3: kWh netto-import vermeden — met saldering (muted)
-  // D-02: negative values shown as-is with .table-cell--negative, NOT floored
-  const avoidedOnNegative = m.avoidedOn <= 0
+  // D-02: negative values shown as-is with .table-cell--negative, NOT floored.
+  // Only apply the destructive red when the value is genuinely negative (< 0);
+  // avoidedOn === 0 is a neutral result — no minus sign, no red (WR-04).
+  const avoidedOnNegative = m.avoidedOn < 0  // strictly negative — not zero
   // Format with U+2212 proper minus sign for negative values
   const avoidedOnText = m.avoidedOn < 0
     ? `−${formatKwh(Math.abs(m.avoidedOn))}`
