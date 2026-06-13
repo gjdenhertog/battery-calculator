@@ -316,6 +316,65 @@ describe('initComparisonTable DOM contract', () => {
     expect(errorEl?.textContent).toContain('Berekening mislukt')
   })
 
+  // ── Regression: transient results/batteries length mismatch must not crash ──
+  //
+  // Reproduces the race where activeBatteries grows to length 2 (via selectedBatteries
+  // update) but simResults is still length 1 from the previous compute.  The effect
+  // must not attempt to read results[1].shiftedKwh (undefined) — it must instead
+  // keep the existing table and surface the compute indicator.
+
+  it('does not throw when activeBatteries.length > simResults.length (transient mismatch)', () => {
+    const batteryA = makeBattery({ id: 'batt-a', name: 'Battery A' })
+    const batteryB = makeBattery({ id: 'batt-b', name: 'Battery B', nominalCapacityKwh: 10 })
+
+    // Start with a valid 1-battery state so there is a prior stale table.
+    selectedBatteries.value = [batteryA]
+    simResults.value = [makeSimResult({ shiftedKwh: 100 })]
+
+    // Sanity: prior state renders correctly.
+    expect(container.querySelectorAll('.battery-row').length).toBe(1)
+
+    // Now simulate the race: grow selectedBatteries to 2 but leave simResults at length 1.
+    // In production this triggers a recompute that has NOT landed yet.
+    expect(() => {
+      selectedBatteries.value = [batteryA, batteryB]
+      // simResults still has length 1 — the effect fires here with mismatched lengths.
+    }).not.toThrow()
+
+    // The container must NOT have rendered a second battery row backed by undefined data.
+    // It must either keep the prior 1-row table or show the compute indicator.
+    const rows = container.querySelectorAll('.battery-row')
+    // At most 1 row (the stale prior table) — never 2 rows with undefined result.
+    expect(rows.length).toBeLessThanOrEqual(1)
+
+    // The compute indicator must be visible (pending state signalled to the user).
+    const indicator = container.querySelector('.compute-indicator')
+    expect(indicator).not.toBeNull()
+  })
+
+  it('renders 2 battery rows once simResults catches up to 2 (mismatch resolved)', () => {
+    const batteryA = makeBattery({ id: 'batt-a', name: 'Battery A' })
+    const batteryB = makeBattery({ id: 'batt-b', name: 'Battery B', nominalCapacityKwh: 10 })
+
+    // Start in the mismatched state.
+    selectedBatteries.value = [batteryA, batteryB]
+    simResults.value = [makeSimResult({ shiftedKwh: 100 })]  // length 1 — mismatch
+
+    // Now the recompute lands: simResults grows to match activeBatteries.
+    simResults.value = [
+      makeSimResult({ shiftedKwh: 100 }),
+      makeSimResult({ shiftedKwh: 200 }),
+    ]
+
+    // Both rows must now be rendered without error.
+    const rows = container.querySelectorAll('.battery-row')
+    expect(rows.length).toBe(2)
+
+    // No compute indicator should remain (computing is false in test env).
+    const indicator = container.querySelector('.compute-indicator')
+    expect(indicator).toBeNull()
+  })
+
   // ── T-04-14: no inline style assignments (grep gate asserted separately)
 
   it('contains no element with inline style attribute (T-04-14)', () => {

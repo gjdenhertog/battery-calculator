@@ -366,6 +366,9 @@ function renderTable(
 
   const tbody = document.createElement('tbody')
   batteries.forEach((battery, i) => {
+    // Defensive: skip any index without a corresponding result (belt-and-suspenders;
+    // the effect-level guard above is the primary defence against mismatched lengths).
+    if (i >= results.length) return
     tbody.appendChild(buildBatteryRow(battery, results[i], i, orderedIds, leaders))
   })
   table.appendChild(tbody)
@@ -438,6 +441,16 @@ export function initComparisonTable(container: HTMLElement): () => void {
       if (!computing) {
         renderEmpty(container)
       }
+      return
+    }
+
+    // Guard against transient results/batteries length mismatch.
+    // This happens when the user toggles a battery and selectedBatteries updates
+    // synchronously (re-running this effect via activeBatteries) BEFORE the new
+    // recompute has landed. Keep the stale table in place and show the compute
+    // indicator — a fresh effect run will arrive once simResults catches up.
+    if (results.length !== batteries.length) {
+      renderComputeIndicator(container)
       return
     }
 
