@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Setup, Deploy Plumbing, Privacy Rules** - Vite + TS scaffold deployed to GitHub Pages with CSP, no third-party scripts, CI green (completed 2026-06-07)
 - [x] **Phase 2: CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series** - HomeWizard P1 parses to canonical `IntervalSample[]`; multi-file merger; period filter; sanity readout; worker parsing (completed 2026-06-09)
 - [x] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support (gap CR-01 mixed-interval residual conservation closed in 03-04) (completed 2026-06-09)
-- [ ] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns
+- [x] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns (completed 2026-06-13)
 - [ ] **Phase 5: Visualizations, Polish, Transparent-Assumptions UI** - Monthly self-consumption bars + sample-week step-line flow chart; assumptions panel; "no euros" explainer; Dutch copy pass; mobile layout; honest terminology audit
 
 ## Phase Details
@@ -89,7 +89,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 04-03-PLAN.md — Signals store + Comlink worker singleton + generation-guarded scheduleRecompute (SIM-07/08); re-wire drop-zone to write parsedSamples + seed period defaults (DATA-12)
 - [x] 04-04-PLAN.md — Battery spec-card picker: 7 catalog cards + Sessy 5 default, max-5 cap, inline custom battery (BATT-03/04/05, COMP-04)
 - [x] 04-05-PLAN.md — Comparison table (OFF-led saldering pair, leaders, un-floored negative ON, disclaimer, cadence banner, stale-dim) + period control (COMP-01..08, SIM-08, DATA-12)
-- [ ] 04-06-PLAN.md — Wire main.ts (picker + period + table), CSS imports, re-assert worker chunk build, live human-verify end-to-end + interactivity + color
+- [x] 04-06-PLAN.md — Wire main.ts (picker + period + table), CSS imports, re-assert worker chunk build, live human-verify end-to-end + interactivity + color
 **UI hint**: yes
 
 ### Phase 5: Visualizations, Polish, Transparent-Assumptions UI
@@ -116,5 +116,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
-| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 5/6 | In Progress|  |
+| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 6/6 | Complete   | 2026-06-13 |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
