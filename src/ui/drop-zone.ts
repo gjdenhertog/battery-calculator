@@ -54,8 +54,7 @@ const STATUS_ID = 'drop-zone-status'
 const ERROR_ID = 'drop-zone-error'
 
 function clearStatusAndError(region: HTMLElement): void {
-  const existing = region.querySelector(`#${STATUS_ID}, #${ERROR_ID}`)
-  if (existing) existing.remove()
+  region.querySelectorAll(`#${STATUS_ID}, #${ERROR_ID}`).forEach((el) => el.remove())
 }
 
 function showStatus(region: HTMLElement, message: string): void {
@@ -109,19 +108,18 @@ async function processFiles(files: File[], region: HTMLElement): Promise<void> {
     // Merge all parse results into a unified series
     const mergeResult = mergeFiles(parseResults)
 
-    // D-16: write parsed samples into the reactive signal graph so
-    // the comparison engine and period control react to the new data.
-    parsedSamples.value = mergeResult.samples
-
-    // D-19: seed period defaults to the full dataset range on first upload
-    // so the period control mounts at the correct date bounds.
-    if (mergeResult.samples.length > 0) {
-      const range = fullRange(mergeResult.samples)
-      batch(() => {
+    // D-16 + D-19: write all three signals atomically so filteredSamples never
+    // recomputes against a mismatched combination of new samples + old period bounds.
+    // Writing parsedSamples outside the batch caused a spurious intermediate
+    // effect run on re-upload with stale periodFrom/periodTo values (CR-02).
+    batch(() => {
+      parsedSamples.value = mergeResult.samples
+      if (mergeResult.samples.length > 0) {
+        const range = fullRange(mergeResult.samples)
         periodFrom.value = range.start
         periodTo.value = range.end
-      })
-    }
+      }
+    })
 
     // Trigger an immediate recompute so the default Sessy-5 comparison renders
     // without waiting for the user to interact with the battery picker.
