@@ -61,6 +61,10 @@ Progress: [██████████] 100%
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 6 added (2026-06-14): Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering. Promoted from Phase 4 UAT enhancement notes (multiple user-defined batteries; saldering optional/off-by-default). Sequenced after Phase 5.
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.

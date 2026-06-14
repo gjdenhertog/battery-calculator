@@ -104,6 +104,8 @@ blocked: 0
 
 ## Enhancement Notes
 
+> **Promoted to roadmap Phase 6** (2026-06-14): "Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering". Both items below are now tracked there.
+
 - **Multiple custom batteries** (raised during Test 4, 2026-06-14): The custom-battery card currently
   supports only one user-defined battery. User wants to add several of their own batteries to the
   comparison. Not a defect (Test 4 passed as designed) — a future enhancement for a later phase/milestone.
