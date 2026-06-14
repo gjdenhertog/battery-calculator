@@ -9,7 +9,7 @@
  * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP).
  */
 import { effect } from '@preact/signals-core'
-import { selectedBatteries, customBattery, scheduleRecompute } from '../state/app-state'
+import { selectedBatteries, customBattery, activeBatteries, scheduleRecompute } from '../state/app-state'
 import { BATTERY_CATALOG } from '../domain/battery-catalog'
 import type { BatteryConfig } from '../domain/types'
 import { colorSlotFor } from '../helpers/color'
@@ -124,6 +124,14 @@ function buildCustomCard(): HTMLLIElement {
   expandBtn.className = 'battery-card__expand'
   expandBtn.setAttribute('aria-expanded', 'false')
   expandBtn.textContent = '+ Eigen batterij' // textContent — XSS safe; static string
+
+  // Color swatch for the custom battery card (COMP-04/D-11 color consistency).
+  // Slot class updated reactively by the custom swatch effect in initBatteryPicker.
+  // Hidden by default; shown only when a valid custom battery is active.
+  // Color is applied via battery-swatch--N CSS class only — no inline style (style-src 'self' CSP).
+  const swatch = document.createElement('span')
+  swatch.className = 'battery-card__swatch'
+  swatch.hidden = true
 
   // Custom battery form (initially hidden)
   const form = document.createElement('form')
@@ -347,6 +355,7 @@ function buildCustomCard(): HTMLLIElement {
     }
   })
 
+  li.appendChild(swatch)
   li.appendChild(expandBtn)
   li.appendChild(form)
   li.appendChild(incompleteAlert)
@@ -446,7 +455,7 @@ export function initBatteryPicker(region: HTMLElement): void {
 
   region.appendChild(section)
 
-  // ── Reactive effect: update card visual states on selection change ─────
+  // ── Reactive effect: update catalog card visual states on selection change ─────
   _disposeFns.push(
     effect(() => {
       const selected = selectedBatteries.value
@@ -486,6 +495,38 @@ export function initBatteryPicker(region: HTMLElement): void {
 
       // Show/hide cap note
       capNote.hidden = !atCap
+    }),
+  )
+
+  // ── Reactive effect: update custom card swatch (COMP-04 / D-11 color consistency) ─────
+  // Reads customBattery and activeBatteries (a computed over selectedBatteries + customBattery)
+  // so the effect re-runs whenever either selection order or the custom battery changes.
+  // Swatch color applied via battery-swatch--N CSS class only — no inline style (style-src 'self' CSP).
+  // Effect pushed to _disposeFns so teardownBatteryPicker() disposes it (Pitfall 3).
+  const customSwatch = customCard.querySelector('.battery-card__swatch') as HTMLSpanElement
+  _disposeFns.push(
+    effect(() => {
+      const cb = customBattery.value
+      const isValid = cb !== null && (cb.nominalCapacityKwh ?? 0) > 0
+
+      if (isValid) {
+        // Compute slot matching the comparison table's colorSlotFor call
+        const orderedIds = activeBatteries.value.map((b) => b.id)
+        const slot = colorSlotFor('custom', orderedIds)
+
+        // Remove all existing slot classes before applying the new one
+        for (let i = 1; i <= 5; i++) {
+          customSwatch.classList.remove(`battery-swatch--${i}`)
+        }
+        customSwatch.classList.add(`battery-swatch--${slot}`)
+        customSwatch.hidden = false
+      } else {
+        // No valid custom battery — hide the swatch and strip slot classes
+        for (let i = 1; i <= 5; i++) {
+          customSwatch.classList.remove(`battery-swatch--${i}`)
+        }
+        customSwatch.hidden = true
+      }
     }),
   )
 }
