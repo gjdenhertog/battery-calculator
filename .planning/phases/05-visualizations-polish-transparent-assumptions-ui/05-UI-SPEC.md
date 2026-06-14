@@ -472,7 +472,7 @@ All copy is in Dutch. This is the full-Dutch-pass phase (UX-03).
 | Assumption 4 | Salderingsvereenvoudiging: de kolom "met saldering" berekent een 1:1-jaarverrekening. Dat is een versimpeling — zie de uitleg bij de tabel voor de 2026-64%-cap en de situatie na 2027. |
 | Assumption 5 | Periode: alle getallen gelden precies voor de periode die je hebt geüpload — er is geen extrapolatie naar een jaar of maand. |
 | "Waarom geen euro's?" heading | Waarom geen euro's? |
-| "Waarom geen euro's?" body | Om een eerlijk eurobedrag te berekenen, heb je je actuele import- en exporttarief nodig — inclusief terugleverkosten en eventuele dynamische prijzen. Die tarieFinance gegevens hebben we niet, en we willen geen bedragen tonen die van jouw situatie afwijken. V1 rapporteert kWh: dat getal is voor iedereen gelijk en correct, ongeacht je tarief. |
+| "Waarom geen euro's?" body | Om een eerlijk eurobedrag te berekenen, heb je je actuele import- en exporttarief nodig — inclusief terugleverkosten en eventuele dynamische prijzen. Die tariefgegevens hebben we niet, en we willen geen bedragen tonen die van jouw situatie afwijken. V1 rapporteert kWh: dat getal is voor iedereen gelijk en correct, ongeacht je tarief. |
 
 ### Audit Terms (UX-05 / UX-06)
 
