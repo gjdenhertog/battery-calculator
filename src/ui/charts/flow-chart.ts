@@ -237,7 +237,7 @@ function buildFlowOpts(
   orderedIds: string[],
   containerWidth: number,
 ): uPlot.Options {
-  const steppedBuilder = uPlot.paths.stepped({ align: 1 }) // step-after (VIZ-03)
+  const steppedBuilder = uPlot.paths.stepped!({ align: 1 }) // step-after (VIZ-03)
   const batteryColor = resolveBatteryColor(battery.id, orderedIds)
   // Try to resolve muted color from CSS vars; fall back to hardcoded value
   const mutedColor = resolveCssVar('--color-text-muted') || COLOR_TERUGLEVERING
@@ -246,7 +246,7 @@ function buildFlowOpts(
     width: containerWidth,
     height: CHART_HEIGHT,
     // tzDate: render x-axis in Amsterdam local time (Pattern 4 / Pitfall 1)
-    tzDate: (ts) => uPlot.tzDate(ts, 'Europe/Amsterdam'),
+    tzDate: (ts) => uPlot.tzDate(new Date(ts * 1000), 'Europe/Amsterdam'),
     series: [
       {}, // x-axis placeholder (required by uPlot)
       {

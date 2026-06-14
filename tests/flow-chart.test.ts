@@ -43,7 +43,10 @@ vi.mock('uplot', () => {
   const UPlotMock = vi.fn().mockImplementation(function () {
     instanceMethods.root = document.createElement('div')
     return instanceMethods
-  })
+  }) as ReturnType<typeof vi.fn> & {
+    paths: { bars: ReturnType<typeof vi.fn>; stepped: ReturnType<typeof vi.fn> }
+    tzDate: ReturnType<typeof vi.fn>
+  }
 
   UPlotMock.paths = {
     bars: barsBuilderMock,
@@ -60,7 +63,7 @@ vi.mock('uplot', () => {
 
 const { initFlowChart } = await import('../src/ui/charts/flow-chart')
 const uPlotModule = await import('uplot')
-const MockUPlot = uPlotModule.default as ReturnType<typeof vi.fn> & {
+const MockUPlot = uPlotModule.default as unknown as ReturnType<typeof vi.fn> & {
   paths: { bars: ReturnType<typeof vi.fn>; stepped: ReturnType<typeof vi.fn> }
   tzDate: ReturnType<typeof vi.fn>
 }

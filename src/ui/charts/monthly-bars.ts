@@ -221,7 +221,7 @@ function buildBarOpts(
       const partialColor = hexToRgba(resolvedHex, PARTIAL_OPACITY)
 
       // One bars() builder per battery with disp.fill keyed off isPartial (Pattern 3b)
-      const barsBuilder = uPlot.paths.bars({
+      const barsBuilder = uPlot.paths.bars!({
         size: [0.6, 60],
         align: 0,
         disp: {

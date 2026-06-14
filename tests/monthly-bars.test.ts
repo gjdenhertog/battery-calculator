@@ -45,7 +45,10 @@ vi.mock('uplot', () => {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     instanceMethods.root = document.createElement('div')
     return instanceMethods
-  })
+  }) as ReturnType<typeof vi.fn> & {
+    paths: { bars: ReturnType<typeof vi.fn>; stepped: ReturnType<typeof vi.fn> }
+    tzDate: ReturnType<typeof vi.fn>
+  }
 
   UPlotMock.paths = {
     bars: barsBuilderMock,
@@ -63,7 +66,7 @@ vi.mock('uplot', () => {
 const { initMonthlyBarsChart } = await import('../src/ui/charts/monthly-bars')
 // Get access to the mock for assertions
 const uPlotModule = await import('uplot')
-const MockUPlot = uPlotModule.default as ReturnType<typeof vi.fn> & {
+const MockUPlot = uPlotModule.default as unknown as ReturnType<typeof vi.fn> & {
   paths: { bars: ReturnType<typeof vi.fn>; stepped: ReturnType<typeof vi.fn> }
   tzDate: ReturnType<typeof vi.fn>
 }
