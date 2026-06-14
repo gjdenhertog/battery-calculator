@@ -20,38 +20,53 @@ import { simResults, selectedBatteries, isComputing } from '../src/state/signals
 import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
 
 // ---------------------------------------------------------------------------
-// Mock uPlot and its CSS before importing the adapter
+// Mock uPlot CSS (so the import 'uplot/dist/uPlot.min.css' resolves)
 // ---------------------------------------------------------------------------
-
-const mockBarsBuilder = vi.fn().mockReturnValue(vi.fn())
-const mockSteppedBuilder = vi.fn().mockReturnValue(vi.fn())
-
-const mockUPlotInstance = {
-  setData: vi.fn(),
-  setSize: vi.fn(),
-  destroy: vi.fn(),
-  root: document.createElement('div'),
-}
-
-const MockUPlot = vi.fn().mockImplementation(() => mockUPlotInstance)
-// Attach static methods that the adapter uses
-;(MockUPlot as unknown as Record<string, unknown>).paths = {
-  bars: mockBarsBuilder,
-  stepped: mockSteppedBuilder,
-}
-;(MockUPlot as unknown as Record<string, unknown>).tzDate = vi.fn()
-
-vi.mock('uplot', () => ({
-  default: MockUPlot,
-}))
 
 vi.mock('uplot/dist/uPlot.min.css', () => ({}))
 
 // ---------------------------------------------------------------------------
-// Import adapter AFTER mocks are set up
+// Mock uPlot — factory must NOT reference outer variables (vi.mock is hoisted)
+// The mock must define everything inline in the factory.
+// ---------------------------------------------------------------------------
+
+vi.mock('uplot', () => {
+  const barsBuilderMock = vi.fn().mockReturnValue(vi.fn())
+  const steppedBuilderMock = vi.fn().mockReturnValue(vi.fn())
+
+  const instanceMethods = {
+    setData: vi.fn(),
+    setSize: vi.fn(),
+    destroy: vi.fn(),
+    root: null as unknown as HTMLElement, // set in factory below
+  }
+
+  const UPlotMock = vi.fn().mockImplementation(function () {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    instanceMethods.root = document.createElement('div')
+    return instanceMethods
+  })
+
+  UPlotMock.paths = {
+    bars: barsBuilderMock,
+    stepped: steppedBuilderMock,
+  }
+  UPlotMock.tzDate = vi.fn()
+
+  return { default: UPlotMock }
+})
+
+// ---------------------------------------------------------------------------
+// After mocks are set up, import the adapter and retrieve mock references
 // ---------------------------------------------------------------------------
 
 const { initMonthlyBarsChart } = await import('../src/ui/charts/monthly-bars')
+// Get access to the mock for assertions
+const uPlotModule = await import('uplot')
+const MockUPlot = uPlotModule.default as ReturnType<typeof vi.fn> & {
+  paths: { bars: ReturnType<typeof vi.fn>; stepped: ReturnType<typeof vi.fn> }
+  tzDate: ReturnType<typeof vi.fn>
+}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -130,14 +145,10 @@ describe('initMonthlyBarsChart DOM contract', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
 
-    // Reset mock call counts
-    vi.clearAllMocks()
-    // Re-attach static methods after clearAllMocks
-    ;(MockUPlot as unknown as Record<string, unknown>).paths = {
-      bars: mockBarsBuilder,
-      stepped: mockSteppedBuilder,
-    }
-    ;(MockUPlot as unknown as Record<string, unknown>).tzDate = vi.fn()
+    // Clear call counts (not implementations — implementations stay from vi.mock factory)
+    MockUPlot.mockClear()
+    MockUPlot.paths.bars.mockClear()
+    MockUPlot.paths.stepped.mockClear()
   })
 
   afterEach(() => {
@@ -212,7 +223,7 @@ describe('initMonthlyBarsChart DOM contract', () => {
     simResults.value = [makeSimResult()]
 
     // With 1 battery, paths.bars should be called once to build the builder for that battery
-    expect(mockBarsBuilder).toHaveBeenCalledTimes(1)
+    expect(MockUPlot.paths.bars).toHaveBeenCalledTimes(1)
   })
 
   it('calls uPlot.paths.bars once per battery when 2 batteries selected', () => {
@@ -224,7 +235,7 @@ describe('initMonthlyBarsChart DOM contract', () => {
     simResults.value = [makeSimResult(), makeSimResult()]
 
     // With 2 batteries, paths.bars should be called twice
-    expect(mockBarsBuilder).toHaveBeenCalledTimes(2)
+    expect(MockUPlot.paths.bars).toHaveBeenCalledTimes(2)
   })
 
   // ── formatAxisKwh routing ─────────────────────────────────────────────────
@@ -246,6 +257,7 @@ describe('initMonthlyBarsChart DOM contract', () => {
 
     const sparseNote = container.querySelector('.chart-sparse-note')
     expect(sparseNote).not.toBeNull()
+    expect((sparseNote as HTMLElement | null)?.hidden).toBe(false)
   })
 
   it('sparse note contains "Weinig data" copy', () => {
@@ -261,7 +273,12 @@ describe('initMonthlyBarsChart DOM contract', () => {
     simResults.value = [makeSimResult(makeMultiMonthTrace())]
 
     const sparseNote = container.querySelector('.chart-sparse-note')
-    expect(sparseNote).toBeNull()
+    // Either null or hidden
+    if (sparseNote) {
+      expect((sparseNote as HTMLElement).hidden).toBe(true)
+    } else {
+      expect(sparseNote).toBeNull()
+    }
   })
 
   // ── XSS safety ────────────────────────────────────────────────────────────
@@ -289,13 +306,19 @@ describe('initMonthlyBarsChart DOM contract', () => {
 
     const initialCallCount = MockUPlot.mock.calls.length
 
+    // Get the instance that was created
+    const createdInstance = MockUPlot.mock.results[0]?.value as {
+      setData: ReturnType<typeof vi.fn>
+    } | undefined
+
     // Update simResults again — should call setData, not create a new chart
     simResults.value = [makeSimResult()]
 
-    // setData should be called for the update
-    expect(mockUPlotInstance.setData).toHaveBeenCalled()
     // uPlot constructor should not have been called again (same battery count)
     expect(MockUPlot.mock.calls.length).toBe(initialCallCount)
+
+    // setData should be called on the existing instance
+    expect(createdInstance?.setData).toHaveBeenCalled()
   })
 
   // ── (deels) partial label ─────────────────────────────────────────────────

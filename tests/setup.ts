@@ -16,6 +16,33 @@
  * function directly per the dual-use pattern).
  */
 
+// Install a ResizeObserver mock when the environment does not provide it (jsdom).
+// jsdom does not implement ResizeObserver; chart adapters use it for responsive resize.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class ResizeObserverMock {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    constructor(_callback: ResizeObserverCallback) {
+      // No-op: no actual observation in tests.
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    observe(_target: Element, _options?: ResizeObserverOptions): void {
+      // No-op.
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    unobserve(_target: Element): void {
+      // No-op.
+    }
+
+    disconnect(): void {
+      // No-op.
+    }
+  }
+
+  globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
+}
+
 // Only install the mock when the environment does not already provide Worker.
 // In a real browser or Deno, Worker is a built-in and this guard is a no-op.
 if (typeof globalThis.Worker === 'undefined') {
