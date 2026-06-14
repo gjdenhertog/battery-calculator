@@ -1,0 +1,69 @@
+/* src/styles/mobile-reflow.css */
+/* @media (max-width: 480px) stacked-card + chart-height reflow. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* Uses Phase 4 data-label / data-metric hooks on <td> elements (D-12, D-13). */
+/* Inverse of the @media (min-width: 480px) block in global.css. */
+
+@media (max-width: 480px) {
+  /* ── Comparison table → stacked per-battery cards ──────────────────────── */
+
+  /* Hide the table header row — labels come from td::before in card mode */
+  .comparison-table thead {
+    display: none;
+  }
+
+  /* Reflow table, body, rows, and cells to block layout for stacking */
+  .comparison-table,
+  .comparison-table tbody,
+  .comparison-table tr,
+  .comparison-table td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Style each battery row as a bordered card */
+  .comparison-table tr.battery-row {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    margin-bottom: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--color-bg);
+  }
+
+  /* Use data-label attribute for per-cell label prefix (D-12 Phase 5 hook) */
+  .comparison-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+  }
+
+  /* Card heading: battery name cell gets heading treatment */
+  .comparison-table td.battery-row__name {
+    font-size: var(--font-size-heading);
+    font-weight: var(--font-weight-semibold);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-sm);
+  }
+
+  /* ── Chart height overrides for mobile ─────────────────────────────────── */
+
+  /* Monthly bars chart: shorter on mobile */
+  #chart-monthly .chart-wrapper {
+    height: 220px;
+  }
+
+  /* Flow chart: shorter on mobile + horizontal scroll within wrapper (D-13) */
+  /* Headline numbers in the comparison table do NOT scroll */
+  #chart-flow .chart-wrapper {
+    height: 260px;
+    overflow-x: auto;
+  }
+
+  /* Fallback: generic chart wrapper shrinks on mobile */
+  .chart-wrapper {
+    height: 220px;
+  }
+}
