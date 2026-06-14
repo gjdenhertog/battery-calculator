@@ -116,5 +116,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Setup, Deploy Plumbing, Privacy Rules | 3/3 | Complete   | 2026-06-07 |
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
-| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 6/6 | Complete   | 2026-06-13 |
+| 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 8/8 | Complete   | 2026-06-14 |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 0/TBD | Not started | - |
