@@ -32,12 +32,20 @@ if (dropZoneRegion) {
   initBatteryPicker(dropZoneRegion)
 }
 
-// Period control and comparison table fill #results-region:
+// Period control and comparison table fill #results-region.
+// The comparison table gets its own dedicated child mount so its innerHTML='' calls
+// only clear the table area — the sibling period-control <section> is unaffected.
 const resultsRegion = document.getElementById('results-region')
 if (resultsRegion) {
   initPeriodControl(resultsRegion)
+  // Create a dedicated mount node for the comparison table AFTER the period control
+  // has appended its <section>. This prevents renderEmpty/renderTable/renderError
+  // from wiping the period-control section via container.innerHTML = '' (UAT Test 5).
+  const comparisonTableMount = document.createElement('div')
+  comparisonTableMount.id = 'comparison-table-mount'
+  resultsRegion.appendChild(comparisonTableMount)
   // Capture the dispose function so it can be called on HMR teardown (WR-01).
-  const disposeComparisonTable = initComparisonTable(resultsRegion)
+  const disposeComparisonTable = initComparisonTable(comparisonTableMount)
   if (import.meta.hot) {
     import.meta.hot.dispose(() => disposeComparisonTable())
   }

@@ -19,16 +19,23 @@ import { formatKwh, formatPct, formatRatio } from '../helpers/format'
 import type { SimResult, BatteryConfig } from '../domain/types'
 
 // ---------------------------------------------------------------------------
-// Verbatim saldering disclaimer copy (COMP-06 — locked text, do NOT edit)
+// Verbatim saldering disclaimer copy (COMP-06 — factually corrected 2026-06-14,
+// verified against Rijksoverheid.nl. The previous version described a phased
+// reduction in saldering that was from a rejected wetsvoorstel — it never took
+// effect. Current facts: saldering is 100% t/m 2026, abolished fully on 2027-01-01.)
 // ---------------------------------------------------------------------------
 
 const SALDERING_DISCLAIMER_COPY =
   'De kolom "met saldering" berekent de netto jaarverrekening (1:1 import versus export). ' +
-  'Dat is een versimpeling: vanaf 2026 is saldering al afgebouwd naar 64% van het ' +
-  'leveringstarief. Terugleverkosten betaal je bovendien altijd, ongeacht de saldering. ' +
-  'Een vloer van 50% van het kale leveringstarief blijft gelden tot en met 2030. ' +
-  'De kolom "zonder saldering" laat zien wat een batterij oplevert in de situatie ' +
-  'waarvoor je hem koopt: de toekomst na afschaffing van saldering.'
+  'Dit is de situatie zoals die nu (t/m 31 december 2026) geldt: saldering is 100%. ' +
+  'Vanaf 1 januari 2027 vervalt de salderingsregeling volledig en in één keer — er is geen ' +
+  'geleidelijke afbouw. Daarna worden afname en teruglevering apart afgerekend; de ' +
+  'terugleververgoeding die je ontvangt is lager dan de leveringsprijs die je betaalt. ' +
+  'Energieleveranciers zijn tot 2030 verplicht minimaal 50% van het kale leveringstarief ' +
+  'als terugleververgoeding te betalen — dit is geen saldering, maar een ' +
+  'terugleververgoedings-ondergrond ná de afschaffing. ' +
+  'De kolom "zonder saldering" laat zien wat een batterij oplevert vanaf 2027: ' +
+  'de werkelijkheid waarvoor je hem koopt.'
 
 // Verbatim cadence banner copy (D-13 — locked text, do NOT edit)
 const CADENCE_BANNER_COPY =

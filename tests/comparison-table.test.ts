@@ -385,4 +385,24 @@ describe('initComparisonTable DOM contract', () => {
     const allElements = container.querySelectorAll('[style]')
     expect(allElements.length).toBe(0)
   })
+
+  // ── Content lock: SALDERING_DISCLAIMER_COPY is factually correct (UAT Test 7) ──
+  //
+  // Saldering is 100% t/m 2026 and abolished fully on 2027-01-01.
+  // The rejected "64% afbouw vanaf 2026" proposal never took effect — it must NOT appear.
+
+  it('disclaimer text mentions "2027" and does NOT contain stale "64%" copy (UAT Test 7)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const disclaimer = container.querySelector('#saldering-disclaimer')
+    expect(disclaimer).not.toBeNull()
+
+    const text = disclaimer?.textContent ?? ''
+    // Must reference the actual abolition year
+    expect(text).toContain('2027')
+    // Must NOT contain the stale "64%" rejected-proposal copy
+    expect(text).not.toContain('64%')
+  })
 })
