@@ -62,4 +62,14 @@ describe('colorSlotFor', () => {
   it('returns 1 (fallback) for an empty selection', () => {
     expect(colorSlotFor('x', [])).toBe(1)
   })
+
+  // CR-01: legend swatch (colorSlotFor) MUST agree with the rendered series
+  // color (colorFor) for every reachable selection, including a 6th battery.
+  it('stays consistent with colorFor() for a 6th battery (no legend/chart color mismatch)', () => {
+    const sel = ['a', 'b', 'c', 'd', 'e', 'f']
+    for (const id of sel) {
+      const slot = colorSlotFor(id, sel) // 1-indexed
+      expect(colorFor(id, sel)).toBe(`var(--color-battery-${slot})`)
+    }
+  })
 })

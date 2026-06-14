@@ -350,7 +350,12 @@ export function initMonthlyBarsChart(container: HTMLElement): () => void {
     if (chart && container.offsetWidth > 0) {
       if (resizeTimer !== null) clearTimeout(resizeTimer)
       resizeTimer = setTimeout(() => {
-        chart!.setSize({ width: container.offsetWidth, height: CHART_HEIGHT })
+        resizeTimer = null
+        // Re-check: an empty-state transition during the debounce window can
+        // null `chart`; the timer fires outside the effect's try/catch (CR-02).
+        if (chart && container.offsetWidth > 0) {
+          chart.setSize({ width: container.offsetWidth, height: CHART_HEIGHT })
+        }
       }, 100)
     }
   })
@@ -365,6 +370,11 @@ export function initMonthlyBarsChart(container: HTMLElement): () => void {
     if (!results || batteries.length === 0 || results.length !== batteries.length) {
       if (!computing) {
         container.innerHTML = ''
+      }
+      // Cancel any in-flight resize debounce before dropping the chart (WR-04).
+      if (resizeTimer !== null) {
+        clearTimeout(resizeTimer)
+        resizeTimer = null
       }
       chart = null
       lastBatteryCount = 0

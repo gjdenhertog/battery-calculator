@@ -33,13 +33,14 @@ export function colorFor(batteryId: string, orderedSelection: string[]): string 
  * `.battery-swatch--N` CSS class names.
  *
  * Returns 1 as a defensive fallback when the id is not found in the selection.
- * Caps at 5 (the number of defined CSS swatch slots) so that a 6th active battery
- * (5 catalog + custom) maps to slot 1 rather than yielding a missing .battery-swatch--6
- * rule. This mirrors the colorFor() fallback which also returns COLOR_SLOTS[0] when
- * idx >= COLOR_SLOTS.length, keeping picker↔table color-consistency (COMP-04/08).
+ * Wraps modulo the palette size (5) for a 6th+ active battery (5 catalog +
+ * custom) so the slot stays in 1..5. This MUST match colorFor(): for index 5,
+ * colorFor() returns COLOR_SLOTS[0] (slot 1), so colorSlotFor() returns 1 too —
+ * otherwise a battery's legend swatch (colorSlotFor) and its rendered series
+ * (colorFor) would disagree, breaking the COMP-04 identification contract.
  */
 export function colorSlotFor(batteryId: string, orderedSelection: string[]): number {
   const idx = orderedSelection.indexOf(batteryId)
   if (idx === -1) return 1
-  return Math.min(idx + 1, COLOR_SLOTS.length)  // cap at 5 defined swatch slots
+  return (idx % COLOR_SLOTS.length) + 1 // wrap to 1..5, consistent with colorFor()
 }
