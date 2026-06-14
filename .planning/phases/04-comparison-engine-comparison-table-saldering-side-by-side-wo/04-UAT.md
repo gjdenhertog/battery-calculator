@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 04-comparison-engine-comparison-table-saldering-side-by-side-wo
 source: [04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md, 04-04-SUMMARY.md, 04-05-SUMMARY.md, 04-06-SUMMARY.md]
 started: 2026-06-14T04:49:43Z
-updated: 2026-06-14T05:05:00Z
+updated: 2026-06-14T14:10:00Z
 ---
 
 ## Current Test
@@ -31,10 +31,10 @@ note: "User wants to be able to add MULTIPLE custom batteries (current design su
 
 ### 5. Upload CSV → Automatic Comparison
 expected: Drop/upload a valid energy CSV. After parsing, the comparison table renders automatically for the pre-selected Sessy 5 (no extra click needed). Period date inputs auto-fill to the data's full range and a coverage indicator shows "{N} dagen aan data".
-result: issue
-reported: "I don't see the coverage indicator, where should that be?"
-severity: major
-confirmed_root_cause: "main.ts mounts initPeriodControl(resultsRegion) AND initComparisonTable(resultsRegion) into the SAME #results-region. comparison-table.ts renderEmpty/renderTable/renderError each call container.innerHTML = '' (lines 48/56/339). The table effect runs immediately on load (empty-state) and on every recompute, wiping the entire period-control <section> (Analyseperiode heading + Van/Tot date inputs + coverage indicator + framing note). CONFIRMED live: user sees the Phase 2 parse readout ('Periode: {date} – {date}', readout.ts:79, mounted beside the upload zone) but NOT the Analyseperiode section. Escaped CI because jsdom tests mount each component in an isolated container — the shared-container layering bug only manifests in the integrated live DOM (worker-mock blind spot family)."
+result: pass
+note: "RESOLVED & re-verified 2026-06-14. Fix 04-07 (commit 3444115) gave the comparison table its own #comparison-table-mount child node so innerHTML='' no longer wipes the period control. User confirmed the Analyseperiode section + coverage indicator now render and persist after upload."
+prior_result: issue
+prior_reported: "I don't see the coverage indicator, where should that be?"
 
 ### 6. Saldering Side-by-Side Columns + Leaders
 expected: Each battery row shows "zonder saldering" (primary) and "met saldering" (muted) columns side by side, plus Zelfverbruik %, Verschoven kWh, Rest-import kWh, Rest-teruglevering kWh, and Marginale benutting. With multiple batteries, the best value per column is highlighted (semibold / tinted leader cell). No "/jaar" or "/maand" extrapolation appears anywhere.
@@ -51,29 +51,32 @@ result: pass
 
 ### 9. Period Narrowing → Live Recompute
 expected: Changing the Van/Tot date inputs to a narrower range recomputes the comparison against just that window. The coverage indicator updates to the new day count. Setting Van later than Tot clamps sensibly rather than breaking.
-result: issue
-reported: "Not testable — the Van/Tot date inputs are wiped by the Test 5 container-clobber bug; the period control never renders."
-severity: major
-root_cause: "Same as Test 5 — comparison table's container.innerHTML='' on the shared #results-region destroys the period-control section. Period narrowing cannot be exercised until that is fixed. Re-test this item after the Test 5 fix lands."
+result: pass
+note: "RESOLVED & re-verified 2026-06-14. Unblocked by the Test 5 fix (04-07). User confirmed narrowing Van/Tot recomputes the table and updates the day count; out-of-order dates clamp sensibly."
+prior_result: issue
+prior_reported: "Not testable — the Van/Tot date inputs are wiped by the Test 5 container-clobber bug; the period control never renders."
 
 ### 10. Compute States — "Rekenen..." + Coarse-Cadence Banner + Consistent Colors
 expected: During recompute a "Rekenen..." indicator appears and the table dims but the UI is not locked. On daily-cadence data a warning banner appears above the table. Each battery's swatch color is the same in the picker as in its table row/column.
 result: pass
-note: "Core checks (Rekenen indicator, cadence banner, catalog-battery color consistency) all pass. Minor cosmetic defect surfaced: the user-created custom battery card shows NO color swatch, so its color is not consistent with its table row. Logged as a minor gap."
+note: "Core checks (Rekenen indicator, cadence banner, catalog-battery color consistency) all pass. The minor swatch sub-gap (custom card had no color swatch) was RESOLVED & re-verified 2026-06-14 via fix 04-08 (commit 23c23e5) — user confirmed the custom card now shows a swatch consistent with its table color."
 
 ## Summary
 
 total: 10
-passed: 8
-issues: 2
+passed: 10
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
+<!-- All gaps below RESOLVED via gap-closure plans 04-07/04-08 and re-verified by the user 2026-06-14. Retained for audit trail. -->
+
 - truth: "Period control (Analyseperiode section: Van/Tot date inputs + coverage indicator + framing note) renders and persists in #results-region after upload and recompute"
-  status: failed
+  status: resolved
+  resolved_by: "04-07 (commit 3444115) — dedicated #comparison-table-mount node; re-verified by user 2026-06-14"
   reason: "User reported: I don't see the coverage indicator. Confirmed live — the entire Analyseperiode section is absent; user sees only the Phase 2 parse readout ('Periode: {date} – {date}')."
   severity: major
   test: 5
@@ -90,7 +93,8 @@ blocked: 0
   debug_session: ""
 
 - truth: "User-created custom battery shows a color swatch on its picker card, consistent with its color in the comparison table"
-  status: failed
+  status: resolved
+  resolved_by: "04-08 (commit 23c23e5) — reactive swatch added to custom card; re-verified by user 2026-06-14"
   reason: "User reported: the battery the user can create himself does not show the color on the card. Confirmed — buildCustomCard() renders no .battery-card__swatch element (only catalog cards do, battery-picker.ts:86-94)."
   severity: minor
   test: 10
