@@ -6,6 +6,7 @@
  * and a dataset < 7 days returning a single span (never null).
  */
 import { describe, it, expect } from 'vitest'
+import { TZDate } from '@date-fns/tz'
 import { selectRepresentativeWeek } from '../src/domain/select-representative-week'
 import type { TraceRow } from '../src/domain/types'
 
@@ -47,11 +48,13 @@ describe('selectRepresentativeWeek', () => {
         ...buildWeek('2025-06-16T10:00:00Z', 2),  // 14 kWh/week
       ]
       const result = selectRepresentativeWeek(rows, AMSTERDAM)
-      // The start must be Monday 2025-06-09 (or local midnight of that day)
-      const startDate = new Date(result.startTs)
-      // Check the date part (year-month-day) of the start in Amsterdam time
-      // 2025-06-09 is a Monday
-      expect(startDate.toISOString()).toContain('2025-06-09')
+      // startTs is Monday 2025-06-09 in Amsterdam local time
+      // In UTC (CEST = +02:00): 2025-06-09T00:00:00+02:00 = 2025-06-08T22:00:00Z
+      // Check Amsterdam-local date of startTs
+      const startLocal = new TZDate(result.startTs, AMSTERDAM)
+      expect(startLocal.getFullYear()).toBe(2025)
+      expect(startLocal.getMonth()).toBe(5) // June = month index 5
+      expect(startLocal.getDate()).toBe(9)  // 9th
     })
 
     it('weekLabel contains the Amsterdam-local start and end dates', () => {
@@ -87,9 +90,12 @@ describe('selectRepresentativeWeek', () => {
       const rows = [...week1, ...week2]
       const result = selectRepresentativeWeek(rows, AMSTERDAM)
 
-      // First week (2025-06-02) should win the tie
-      const startDate = new Date(result.startTs)
-      expect(startDate.toISOString()).toContain('2025-06-02')
+      // First week (Mon 2025-06-02 Amsterdam) should win the tie
+      // In UTC (CEST +02:00): 2025-06-02T00:00:00+02:00 = 2025-06-01T22:00:00Z
+      const startLocal = new TZDate(result.startTs, AMSTERDAM)
+      expect(startLocal.getFullYear()).toBe(2025)
+      expect(startLocal.getMonth()).toBe(5) // June = month index 5
+      expect(startLocal.getDate()).toBe(2)  // 2nd
     })
   })
 
