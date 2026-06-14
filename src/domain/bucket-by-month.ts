@@ -16,8 +16,6 @@
 import { TZDate } from '@date-fns/tz'
 import type { TraceRow } from './types'
 
-const AMSTERDAM = 'Europe/Amsterdam'
-
 /** NL abbreviated month names indexed 0 (Jan) to 11 (Dec) */
 const NL_MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 
