@@ -221,6 +221,8 @@ const u = new uPlot(opts, data, containerElement)
 
 **Critical:** uPlot x-axis timestamps are Unix SECONDS (not milliseconds). `TraceRow.timestamp` is a `Date` — convert with `row.timestamp.getTime() / 1000`.
 
+**uPlot stylesheet import (DECIDED — see Open Question resolution / WARNING-4):** uPlot ships `uplot/dist/uPlot.min.css`, a **class-only stylesheet** (e.g. `.u-wrap`, `.u-over`, `.u-axis`, `.u-legend` rules) — it contains **no inline-style injection and no `@import`/`url()` network fetch**, and the chart itself renders to `<canvas>`. It is served as a same-origin bundled stylesheet under `style-src 'self'`, so importing it is CSP-safe. The chart adapters MUST import it **unconditionally** at module top: `import 'uplot/dist/uPlot.min.css'`. This is a deterministic decision — there is no runtime "confirm if CSP-safe" branch.
+
 ### Pattern 2: Stepped-Line Path Builder (VIZ-03)
 
 **What:** `uPlot.paths.stepped({ align: 1 })` creates a step-after path builder. `align: 1` means the horizontal segment extends to the right of each data point (step AFTER the value changes) — the correct interpretation for energy-per-interval data where the value is the amount during the preceding interval.
@@ -256,30 +258,74 @@ const opts: uPlot.Options = {
 }
 ```
 
-### Pattern 3: Grouped-Bar Chart (VIZ-01)
+### Pattern 3: Grouped-Bar Chart (VIZ-01) — COMMITTED APPROACH
 
-**What:** uPlot `^1.6.32` supports bars via `uPlot.paths.bars()`. For the monthly self-consumption chart the simplest correct approach is: **one series per battery**, where x-axis entries are ordinal month indices (0, 1, 2...) with string labels displayed on the axis, and bars are drawn using `uPlot.paths.bars({ size: [0.8, 100], align: 0 })`.
+**Decision (resolves Open Question 1, satisfies ROADMAP success criterion 1 + D-04):** Render a **single grouped-bar chart** with **one bar series per selected battery**, x-axis = ordinal month indices `0..N-1` with NL month tick labels. Bars are drawn with `uPlot.paths.bars()` and uPlot's **native multi-series side-by-side grouping** — when more than one `bars()` series shares the same x ordinal scale, uPlot offsets each series' bars within the per-ordinal slot automatically (the `size` factor governs slot fill). This is the literal "grouped per month, one bar per selected battery" layout the ROADMAP and D-04 require; colors come from `colorFor()` so they match the comparison table.
 
-**Source:** `github.com/leeoniya/uPlot/demos/line-paths.html` + `dist/uPlot.d.ts` [VERIFIED: official repo]
+**This does NOT use the demo `seriesBarsPlugin`/`quadtree.js`/`distr.js` files** (those are demo-only and not in the npm package — Pitfall 5). The native `uPlot.paths.bars()` builder applied per-series is sufficient for 2–5 battery series and keeps the implementation inside the published package surface.
+
+**Source:** `github.com/leeoniya/uPlot/demos/line-paths.html` (bars builder) + `dist/uPlot.d.ts` `BarsPathBuilderOpts` [VERIFIED: official repo]
 
 ```typescript
 // Source: uPlot.d.ts BarsPathBuilderOpts + demos
+// One bars() builder shared/created per battery series.
+// size: [groupFactor, maxPx] — groupFactor < 1 leaves a gap so adjacent
+// month groups and adjacent battery bars read as distinct.
 const barsBuilder = uPlot.paths.bars({
-  size: [0.6, 100],  // 60% fill, 100px max width
-  align: 0,          // center bars on tick
+  size: [0.6, 60],   // 60% of available slot, 60px max bar width
+  align: 0,          // center the group on the tick
 })
 
-// For grouped bars (multiple batteries):
-// Use separate series per battery, each with bars() builder.
-// uPlot places series bars side-by-side when multiple series share the same
-// x ordinal — position offset computed via the bars() plugin internally.
-// The grouped-bars demo uses the seriesBarsPlugin helper for complex cases;
-// for 2–5 batteries the simpler approach is the disp-based bars builder.
+// data[0] = [0, 1, 2, ...] (month ordinals)
+// data[1..M] = per-battery shiftedKwh-per-month arrays
+// Each series i (1..M) uses paths: barsBuilder and stroke/fill = colorFor()-resolved hex.
+// uPlot draws series 1..M side-by-side within each x ordinal = grouped bars.
 ```
 
-**Note:** The grouped-bar demo (`grouped-bars.js` + `bars-grouped-stacked.html`) shows that true grouped bars require a `seriesBarsPlugin` using `disp.x0` / `disp.size` with a custom distribution function (quadtree + distr.js). For 2–5 battery bars per month this is viable but requires adapting the plugin. The planner should budget half a day for this.
+**Why this satisfies VIZ-01 (the "grouped-bar" contract):** the chart is one chart, with months on the x-axis and, within each month, one bar per selected battery placed side by side and colored by `colorFor()` — exactly ROADMAP criterion 1 and D-04. No stacked-per-battery fallback is used; the per-battery bars are grouped in a single chart.
 
-**Simpler alternative within scope:** Render one chart per battery (stacked vertically), each a single-battery bar chart. This avoids the grouped-bar plugin complexity while still satisfying VIZ-01 (which says "per month per selected battery" — not literally requiring side-by-side bars in a single chart). This is Claude's Discretion territory. Both approaches satisfy the requirement; the planner should choose based on visual clarity tradeoffs.
+### Pattern 3a: Ordinal Month Axis Labels (VIZ-01) — COMMITTED APPROACH
+
+**Decision (resolves Open Question 2):** The bars chart x-axis is a numeric ordinal scale (`0,1,2,...`). Map each integer split to its pre-computed NL month label via `axes[0].values`:
+
+```typescript
+// Source: uPlot.d.ts Axis.values signature [VERIFIED: official repo]
+// monthLabels: string[] is built from MonthBucket.monthLabel (Plan 01), index-aligned to data[0].
+axes: [
+  {
+    values: (_u, splits) => splits.map(i => monthLabels[Math.round(i)] ?? ''),
+  },
+  {
+    values: (_u, splits) => splits.map(v => formatAxisKwh(v)),
+  },
+]
+```
+
+`Math.round(i)` guards against uPlot generating fractional splits on a numeric scale; out-of-range indices render as an empty string (no stray tick label). This is the committed pattern — the adapter does not defer this to runtime experimentation.
+
+### Pattern 3b: Partial-Month Opacity (VIZ-01 / D-05) — COMMITTED APPROACH
+
+**Decision (resolves Open Question 3):** Partial-month bars are drawn at lower fill opacity **within the same per-battery series** (no second "partial" series, no second data pass). Plan 01's `MonthBucket` already carries an `isPartial: boolean` per month — the adapter reads that flag directly and supplies a per-bar fill via the bars builder's `disp.fill.values` (a per-data-index value function), returning the full-opacity battery color for `!isPartial` indices and a lower-alpha variant of the same color for `isPartial` indices:
+
+```typescript
+// Source: uPlot.d.ts BarsPathBuilderOpts.disp [VERIFIED: official repo]
+// buckets[i].isPartial drives the per-bar fill alpha — one pass, one series per battery.
+const barsBuilder = uPlot.paths.bars({
+  size: [0.6, 60],
+  align: 0,
+  disp: {
+    fill: {
+      unit: 3,                       // raw CSS-color values, per data index
+      values: (_u, _seriesIdx) =>
+        buckets.map(b => b.isPartial ? partialColor : fullColor),
+    },
+  },
+})
+// fullColor    = resolved battery hex (full opacity)
+// partialColor = same hex at lower alpha (color-mix(... 40%) or rgba on the resolved hex)
+```
+
+Because `MonthBucket.isPartial` is computed once in the pure helper (Plan 01), the adapter needs **no second pass** to determine opacity — it maps the existing bucket array. Full months render at full alpha; partial months at lower alpha; and the `(deels)` text label (D-05) is added as a `.chart-partial-label` DOM span below the axis. No extrapolation — the real (lower) `shiftedKwh` value is plotted as-is.
 
 ### Pattern 4: Timezone Display (tzDate option)
 
@@ -411,6 +457,7 @@ describe('UX-06 no-CTA audit', () => {
 - **Recreating uPlot on every signal update:** Call `chart.setData(newData)` for data changes; only destroy + recreate on battery count or series structure changes.
 - **Hard-coded hex colors:** Always resolve from CSS custom properties at mount time (`getComputedStyle`). This ensures chart colors match the table's CSS-variable-driven colors.
 - **uPlot native legend:** uPlot's built-in legend renders via DOM but may conflict with CSP in some configurations. The UI-SPEC mandates a custom HTML legend below the canvas — follow that.
+- **Importing the demo grouped-bars plugin:** Do NOT copy `seriesBarsPlugin` / `quadtree.js` / `distr.js` — they are demo files, not in the npm package. The committed grouped layout uses only the published `uPlot.paths.bars()` builder (Pattern 3).
 
 ---
 
@@ -497,7 +544,8 @@ Charts use `effect(() => { const results = simResults.value; ... })` — same pa
 
 ```typescript
 // [VERIFIED: src/constants/csp.ts — read 2026-06-14]
-"style-src 'self'"    // No inline style= anywhere — uPlot canvas draws are exempt
+"style-src 'self'"    // No inline style= anywhere — uPlot canvas draws are exempt;
+                       // uPlot.min.css is a same-origin bundled stylesheet (class-only) — allowed
 "connect-src 'none'"  // uPlot uses no network
 "worker-src 'self' blob:"  // Unchanged — uPlot adds no workers
 // Phase 5 requires ZERO changes to the CSP.
@@ -529,6 +577,7 @@ function localMonthKey(ts: Date): string {
 - A month is "full" if both its first and last calendar day appear in the trace.
 - The first and last months of any dataset are partial unless the data starts exactly on the 1st and ends on the last day.
 - Implementation: after bucketing, check if the first day of the month and the last day appear in the sample timestamps for that bucket. If not, `isPartial: true`.
+- **This `isPartial` flag is the sole input to the chart's partial-month opacity (Pattern 3b) — the adapter does no second-pass detection.**
 
 **Sparse data (D-06):** When `< 2` full months exist, render the 1–2 partial bars with the "weinig data" note (Dutch copy from UI-SPEC). Do not hide the chart.
 
@@ -589,11 +638,11 @@ function localMonthKey(ts: Date): string {
 **How to avoid:** Do NOT use uPlot's tooltip plugin. Use CSS `::after` pseudo-elements for term tooltips (already specified in UI-SPEC). If chart value readouts on hover are needed, render a DOM overlay with CSS class positioning only.
 **Warning signs:** Browser CSP console error: "Refused to apply inline style".
 
-### Pitfall 5: Grouped Bars Complexity
-**What goes wrong:** uPlot's grouped bar demo uses a `seriesBarsPlugin` that depends on `quadtree.js` and `distr.js` helper libraries — these are demo files, not part of the uPlot npm package.
-**Why it happens:** The grouped-bar layout algorithm is not built into uPlot's bars() path builder — it requires a plugin.
-**How to avoid:** Either (a) use a simpler approach (one chart per battery, stacked vertically, each a single-series bar chart), or (b) implement the grouped-bar layout from scratch using the `disp.x0`/`disp.size` API in `uPlot.paths.bars()`. The planner must choose. Option (a) is simpler and still satisfies VIZ-01.
-**Warning signs:** `quadtree is not defined` error in the browser console if demo code is naively copied.
+### Pitfall 5: Grouped Bars Demo Plugin Is Not In The npm Package
+**What goes wrong:** uPlot's grouped-bar **demo** uses a `seriesBarsPlugin` that depends on `quadtree.js` and `distr.js` helper files — these are demo files, NOT part of the uPlot npm package. Copying demo code naively throws `quadtree is not defined`.
+**Why it happens:** The demo's distribution algorithm lives in repo demo helpers, not the published library.
+**How to avoid:** Use the COMMITTED approach (Pattern 3): one `uPlot.paths.bars()` series per battery on a shared ordinal x-scale; uPlot's native multi-series bar offsetting groups them side-by-side. Do NOT import the demo plugin or its helper files.
+**Warning signs:** `quadtree is not defined` / `distr is not defined` in the browser console.
 
 ### Pitfall 6: effect() Cleanup and uPlot Destroy
 **What goes wrong:** Creating a `new uPlot(...)` inside an `effect()` callback without calling `chart.destroy()` on cleanup leads to multiple chart instances attached to the same container.
@@ -623,7 +672,8 @@ function localMonthKey(ts: Date): string {
 // data[0] = month ordinal indices [0, 1, 2, ..., N-1]
 // data[1] = battery 1 shiftedKwh per month [(number | null)[], length N]
 // data[2] = battery 2 shiftedKwh per month
-// Partial months: pass the real (lower) kWh value — opacity via uPlot fill alpha
+// Partial months: pass the real (lower) kWh value — opacity via the bars()
+// builder disp.fill keyed off MonthBucket.isPartial (Pattern 3b), NOT a second series.
 
 const monthData: uPlot.AlignedData = [
   monthBuckets.map((_, i) => i),      // [0, 1, 2, ...]
@@ -745,28 +795,25 @@ describe('UX-06 no-CTA audit', () => {
 |---|-------|---------|---------------|
 | A1 | `date-fns` `startOfWeek(tzDate, { weekStartsOn: 1 })` works with TZDate to find Monday boundaries in Amsterdam local time | Month Bucketing / Week Heuristic | Week boundaries could be off by 1 day at DST transitions; needs a fixture test to confirm |
 | A2 | `TZDate.getFullYear()` and `TZDate.getMonth()` return Amsterdam local values (not UTC) | Month Bucketing | Buckets would be wrong by 1–2 hours at DST edge; verify with a DST-crossing fixture |
-| A3 | `uPlot.paths.bars()` with multiple series renders side-by-side bars per x ordinal without a plugin | Pitfall 5 / Grouped Bars | May need the seriesBarsPlugin approach; planner must verify with a prototype |
+| A3 | `uPlot.paths.bars()` applied per-series on a shared ordinal x-scale renders side-by-side grouped bars without the demo seriesBarsPlugin | Pattern 3 / Open Question 1 (RESOLVED) | If native offsetting overlaps bars, the adapter must set per-series `disp.x0`/`disp.size` from the published `bars()` API to offset within each ordinal slot — still inside the npm package, no quadtree/distr demo files. Verify in the Plan 03 jsdom + live human-verify. |
 
-**Lowest-risk approach for A3:** Plan for option (a) — one chart per battery stacked vertically — as the default, with a note that the planner can upgrade to grouped bars if prototyping confirms it's feasible without the demo helper files.
+**Note on A3:** The committed grouped-bar layout (Pattern 3) stays entirely within the published `uPlot.paths.bars()` API. If uPlot's automatic multi-series offsetting needs an explicit nudge, the documented `disp.x0`/`disp.size` per-series offset (also part of `BarsPathBuilderOpts`) is the in-package fallback — the demo `seriesBarsPlugin`/`quadtree.js`/`distr.js` files are never used.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Grouped bars: plugin vs stacked charts**
-   - What we know: True side-by-side grouped bars require either adapting the `disp.x0`/`disp.size` API or porting the demo's `seriesBarsPlugin`. The plugin depends on `quadtree.js` and `distr.js` — demo-only files not in the npm package.
-   - What's unclear: How much effort is the plugin port? Is there a simpler approach using built-in `disp` that doesn't require quadtree?
-   - Recommendation: Planner should default to the "one chart per battery" approach and upgrade only if prototyping shows the disp-based approach is straightforward.
+All three open questions are resolved with committed approaches below. Plan 03 encodes these decisions; the executor does not re-decide them at runtime.
 
-2. **uPlot axis tick format for month labels on bars chart**
-   - What we know: For ordinal x-axes (bars chart using integer indices), uPlot axis tick labels can be set via an `axes[0].values` function that maps index → label string (e.g. `"jan '25"`).
-   - What's unclear: Whether ordinal axis tick labels appear correctly when the x-axis scale is numeric.
-   - Recommendation: Use `axes[0].values: (_u, splits) => splits.map(i => monthLabels[Math.round(i)] ?? '')` where `monthLabels` is the pre-computed label array.
+1. **Grouped bars: native bars() per-series vs demo plugin — RESOLVED: native `uPlot.paths.bars()`, one series per battery.**
+   - **Resolution:** Render a single grouped-bar chart with one `uPlot.paths.bars()` series per selected battery on a shared ordinal x-scale; uPlot draws the per-battery bars side-by-side within each month slot (Pattern 3). This is the literal "grouped per month, one bar per selected battery, colored via colorFor()" layout required by **ROADMAP success criterion 1** and **CONTEXT D-04**.
+   - **Why this satisfies VIZ-01's "grouped-bar" contract:** one chart, months on the x-axis, one colored bar per battery grouped within each month — no stacked-per-battery fallback. The demo `seriesBarsPlugin` (`quadtree.js`/`distr.js`, not in the npm package) is explicitly NOT used; if native offsetting needs a nudge, the published `disp.x0`/`disp.size` `bars()` options are the in-package mechanism (Assumption A3 note).
 
-3. **`uPlot.paths.bars()` with `disp` for partial-month opacity**
-   - What we know: The `disp` option in `BarsPathBuilderOpts` allows per-bar display customization.
-   - What's unclear: Whether per-bar fill opacity (80% full / 40% partial) can be set via `disp.fill.values` or whether it requires a separate series per opacity level.
-   - Recommendation: Simplest approach is two series per battery (full + partial), each with different fill opacity. Or use a custom `draw` hook via uPlot's plugin system.
+2. **Ordinal axis tick format for month labels — RESOLVED: `axes[0].values` index→label mapping.**
+   - **Resolution:** The bars x-axis is a numeric ordinal scale; map each split to a pre-computed NL month label via `axes[0].values: (_u, splits) => splits.map(i => monthLabels[Math.round(i)] ?? '')`, where `monthLabels` is built from `MonthBucket.monthLabel` (Plan 01), index-aligned to `data[0]` (Pattern 3a). `Math.round` + `?? ''` guard fractional/out-of-range splits.
+
+3. **Per-bar partial-month opacity — RESOLVED: single-series `disp.fill` keyed off `MonthBucket.isPartial`.**
+   - **Resolution:** Lower-opacity partial bars are produced **within the same per-battery series** via the `bars()` builder `disp.fill.values` function, returning full-alpha battery color for `!isPartial` indices and a lower-alpha variant for `isPartial` indices (Pattern 3b). **No second "partial" series and no second data pass** — Plan 01's `MonthBucket.isPartial` flag (computed once in the pure helper) is the sole input, so Plan 01's output shape already serves this with no rework. The `(deels)` text label (D-05) is a `.chart-partial-label` DOM span; the plotted value is the real (lower) `shiftedKwh` — no extrapolation.
 
 ---
 
@@ -805,21 +852,21 @@ describe('UX-06 no-CTA audit', () => {
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| VIZ-01 | `bucketByMonth()` returns correct MonthBucket[] with isPartial flags | unit | `npm test -- bucket-by-month` | ❌ Wave 0 |
-| VIZ-01 | `bucketByMonth()` handles DST month boundary (2026-03-29 straddles Feb/Mar) | unit | `npm test -- bucket-by-month` | ❌ Wave 0 |
-| VIZ-01 | `bucketByMonth()` sparse case (<2 full months) returns all-partial array | unit | `npm test -- bucket-by-month` | ❌ Wave 0 |
-| VIZ-02 | `selectRepresentativeWeek()` returns week with highest sum of residualExportKwh | unit | `npm test -- select-representative-week` | ❌ Wave 0 |
-| VIZ-02 | `selectRepresentativeWeek()` tie-breaks to first week | unit | `npm test -- select-representative-week` | ❌ Wave 0 |
-| VIZ-02 | `selectRepresentativeWeek()` handles dataset < 7 days (returns single span) | unit | `npm test -- select-representative-week` | ❌ Wave 0 |
-| VIZ-03 | Flow chart uses stepped path (not smooth): verified by uPlot config inspection | unit (jsdom) | `npm test -- flow-chart` | ❌ Wave 0 |
-| VIZ-04 | `formatAxisKwh(3.14159)` returns `"3.1"` (no suffix, 1 decimal) | unit | `npm test -- format` | ❌ (extend existing format.test.ts) |
-| VIZ-04 | No raw float rendering in chart DOM: axis ticks use formatAxisKwh | unit (jsdom) | `npm test -- monthly-bars` | ❌ Wave 0 |
-| UX-01 | `<details>` element renders with correct aria-label and summary text | unit (jsdom) | `npm test -- transparency-panel` | ❌ Wave 0 |
-| UX-02 | "Waarom geen euro's?" heading present inside the panel | unit (jsdom) | `npm test -- transparency-panel` | ❌ Wave 0 |
-| UX-03 | `.term-tooltip` span has tabindex="0" and data-tooltip attribute | unit (jsdom) | `npm test -- tooltips` | ❌ Wave 0 |
+| VIZ-01 | `bucketByMonth()` returns correct MonthBucket[] with isPartial flags | unit | `npm test -- bucket-by-month` | ❌ Wave 1 |
+| VIZ-01 | `bucketByMonth()` handles DST month boundary (2026-03-29 straddles Feb/Mar) | unit | `npm test -- bucket-by-month` | ❌ Wave 1 |
+| VIZ-01 | `bucketByMonth()` sparse case (<2 full months) returns all-partial array | unit | `npm test -- bucket-by-month` | ❌ Wave 1 |
+| VIZ-02 | `selectRepresentativeWeek()` returns week with highest sum of residualExportKwh | unit | `npm test -- select-representative-week` | ❌ Wave 1 |
+| VIZ-02 | `selectRepresentativeWeek()` tie-breaks to first week | unit | `npm test -- select-representative-week` | ❌ Wave 1 |
+| VIZ-02 | `selectRepresentativeWeek()` handles dataset < 7 days (returns single span) | unit | `npm test -- select-representative-week` | ❌ Wave 1 |
+| VIZ-03 | Flow chart uses stepped path (not smooth): verified by uPlot config inspection | unit (jsdom) | `npm test -- flow-chart` | ❌ Wave 2 |
+| VIZ-04 | `formatAxisKwh(3.14159)` returns `"3.1"` (no suffix, 1 decimal) | unit | `npm test -- format` | ❌ (extend existing format.test.ts, Wave 1) |
+| VIZ-04 | No raw float rendering in chart DOM: axis ticks use formatAxisKwh | unit (jsdom) | `npm test -- monthly-bars` | ❌ Wave 2 |
+| UX-01 | `<details>` element renders with correct aria-label and summary text | unit (jsdom) | `npm test -- transparency-panel` | ❌ Wave 2 |
+| UX-02 | "Waarom geen euro's?" heading present inside the panel | unit (jsdom) | `npm test -- transparency-panel` | ❌ Wave 2 |
+| UX-03 | `.term-tooltip` span has tabindex="0" and data-tooltip attribute | unit (jsdom) | `npm test -- tooltips` | ❌ Wave 2 |
 | UX-04 | Charts do not overflow viewport at 375px (CSS contract test) | manual visual | — | manual |
-| UX-05 | `src/` grep: zero occurrences of banned terminology | CI grep | `npm test -- terminology-audit` | ❌ Wave 0 |
-| UX-06 | `src/` grep: no email/CTA/offerte patterns | CI grep | `npm test -- terminology-audit` | ❌ Wave 0 |
+| UX-05 | `src/` grep: zero occurrences of banned terminology | CI grep | `npm test -- terminology-audit` | ❌ Wave 1 |
+| UX-06 | `src/` grep: no email/CTA/offerte patterns | CI grep | `npm test -- terminology-audit` | ❌ Wave 1 |
 
 ### Sampling Rate
 
@@ -827,17 +874,15 @@ describe('UX-06 no-CTA audit', () => {
 - **Per wave merge:** `npm test` (full suite)
 - **Phase gate:** Full suite green before `/gsd:verify-work`
 
-### Wave 0 Gaps
+### Wave Test-File Origins
 
-- [ ] `tests/bucket-by-month.test.ts` — covers VIZ-01 (full month, partial month, DST crossing, sparse)
-- [ ] `tests/select-representative-week.test.ts` — covers VIZ-02 (best week, tie-break, short dataset)
-- [ ] `tests/terminology-audit.test.ts` — covers UX-05 + UX-06 (combined CI grep file)
-- [ ] `tests/transparency-panel.test.ts` — covers UX-01 + UX-02 (jsdom)
-- [ ] `tests/tooltips.test.ts` — covers UX-03 basics (jsdom)
-- [ ] `tests/monthly-bars.test.ts` — covers VIZ-01 DOM + VIZ-04 (jsdom)
-- [ ] `tests/flow-chart.test.ts` — covers VIZ-02/03 + dropdown (jsdom)
-- [ ] Extend `tests/format.test.ts` — add `formatAxisKwh` tests (VIZ-04)
-- [ ] Install uPlot: `npm install uplot@^1.6.32`
+> Wave 0 (pre-execution) installs the one new dependency only. The pure-helper/audit test files are created in their owning Wave 1 plans (Plan 01 / Plan 02); the jsdom DOM-adapter test files are created in their owning Wave 2 plans (Plan 03 / Plan 04) alongside the adapters they cover. None of the jsdom adapter tests are Wave 0 pre-stubs.
+
+- **Pre-execution dependency (Wave 0):** `npm install uplot@^1.6.32` — install the one new runtime dep.
+- **Wave 1 (Plan 01) test files:** `tests/bucket-by-month.test.ts` (VIZ-01), `tests/select-representative-week.test.ts` (VIZ-02), `tests/format.test.ts` extension for `formatAxisKwh` (VIZ-04). Node-env.
+- **Wave 1 (Plan 02) test file:** `tests/terminology-audit.test.ts` (UX-05 + UX-06 combined CI grep). Node-env.
+- **Wave 2 (Plan 03) test files:** `tests/monthly-bars.test.ts` (VIZ-01 DOM + VIZ-04), `tests/flow-chart.test.ts` (VIZ-02/03 + dropdown). jsdom — created alongside their adapters, not as Wave 0 stubs.
+- **Wave 2 (Plan 04) test files:** `tests/transparency-panel.test.ts` (UX-01 + UX-02), `tests/tooltips.test.ts` (UX-03). jsdom — created alongside the panel/tooltip modules, not as Wave 0 stubs.
 
 ---
 
@@ -878,7 +923,7 @@ describe('UX-06 no-CTA audit', () => {
 - `src/constants/csp.ts` — current CSP directives (no changes needed) [VERIFIED: live codebase 2026-06-14]
 - `src/styles/tokens.css` — all CSS custom property names and values [VERIFIED: live codebase 2026-06-14]
 - `src/domain/gaps.ts` — `TZDate` usage pattern for Amsterdam local time [VERIFIED: live codebase 2026-06-14]
-- `github.com/leeoniya/uPlot/dist/uPlot.d.ts` — constructor, `AlignedData`, `stepped()`, `bars()`, `setSize()`, `setData()`, `tzDate`, `PathBuilderFactories` [VERIFIED: fetched via GitHub API 2026-06-14]
+- `github.com/leeoniya/uPlot/dist/uPlot.d.ts` — constructor, `AlignedData`, `stepped()`, `bars()`, `BarsPathBuilderOpts` (`size`, `align`, `disp`, `disp.fill`, `disp.x0`), `setSize()`, `setData()`, `tzDate`, `Axis.values`, `PathBuilderFactories` [VERIFIED: fetched via GitHub API 2026-06-14]
 - `github.com/leeoniya/uPlot/demos/timezones-dst.html` — `tzDate: ts => uPlot.tzDate(ts, zone)` pattern [VERIFIED: fetched via GitHub API 2026-06-14]
 - `github.com/leeoniya/uPlot/demos/line-paths.html` — `stepped({align: -1/1})` and `bars({size})` usage [VERIFIED: fetched via GitHub API 2026-06-14]
 - `tests/csp-plugin.test.ts` — Phase 1 CI grep test pattern for UX-05/06 [VERIFIED: live codebase 2026-06-14]
@@ -905,6 +950,7 @@ describe('UX-06 no-CTA audit', () => {
 - Architecture: HIGH — all Phase 4 contracts read from live source files
 - uPlot API mechanics: HIGH — confirmed from official .d.ts and demos via GitHub API
 - Month bucketing pattern: HIGH — TZDate pattern confirmed from gaps.ts; exact month-bucketing logic is ASSUMED (A1, A2)
+- Grouped-bar layout: MEDIUM-HIGH — committed to native `uPlot.paths.bars()` per-series (Pattern 3); A3 covers the in-package `disp.x0`/`disp.size` fallback if automatic offsetting needs a nudge (verified in Plan 03 jsdom + live)
 - Pitfalls: HIGH — grounded in actual uPlot source behavior and CSP constraints verified from live code
 
 **Research date:** 2026-06-14
