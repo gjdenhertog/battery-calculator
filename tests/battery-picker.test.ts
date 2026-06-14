@@ -10,12 +10,14 @@
  *   (b) Sessy 5 checkbox is checked on mount (BATT-03)
  *   (c) Checking 5 batteries disables remaining checkboxes + shows cap note (BATT-05)
  *   (d) XSS assertion: custom battery name via .textContent — no <script> elements
+ *   (e) Custom card swatch: slot matches comparison table; hidden when no valid custom battery
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderShell } from '../src/shell'
 import { initBatteryPicker, teardownBatteryPicker } from '../src/ui/battery-picker'
-import { selectedBatteries } from '../src/state/app-state'
+import { selectedBatteries, customBattery, activeBatteries } from '../src/state/app-state'
 import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
+import { colorSlotFor } from '../src/helpers/color'
 
 // ---------------------------------------------------------------------------
 // DOM setup
@@ -31,6 +33,16 @@ function setupPickerRegion(): HTMLElement {
   return region
 }
 
+function resetPickerDOM(): HTMLElement {
+  teardownBatteryPicker()
+  document.body.innerHTML = '<div id="app"></div>'
+  const host = document.getElementById('app') as HTMLElement
+  renderShell(host)
+  const newRegion = document.getElementById('drop-zone-region') as HTMLElement
+  initBatteryPicker(newRegion)
+  return newRegion
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -41,11 +53,13 @@ describe('initBatteryPicker DOM contract', () => {
   beforeEach(() => {
     // Reset selectedBatteries to default before each test (Sessy 5 only)
     selectedBatteries.value = [BATTERY_CATALOG[0]]
+    customBattery.value = null
     region = setupPickerRegion()
   })
 
   afterEach(() => {
     teardownBatteryPicker()
+    customBattery.value = null
   })
 
   // ── (a) Card count ──────────────────────────────────────────────────────
@@ -105,12 +119,7 @@ describe('initBatteryPicker DOM contract', () => {
     selectedBatteries.value = Array.from(BATTERY_CATALOG).slice(0, 5)
 
     // Re-setup to trigger the reactive effect
-    teardownBatteryPicker()
-    document.body.innerHTML = '<div id="app"></div>'
-    const host = document.getElementById('app') as HTMLElement
-    renderShell(host)
-    const newRegion = document.getElementById('drop-zone-region') as HTMLElement
-    initBatteryPicker(newRegion)
+    const newRegion = resetPickerDOM()
 
     // Cards for batteries NOT in the first 5 should have disabled checkboxes
     const remaining = catalogIds.slice(5)
@@ -134,12 +143,7 @@ describe('initBatteryPicker DOM contract', () => {
     // Set 5 batteries
     selectedBatteries.value = Array.from(BATTERY_CATALOG).slice(0, 5)
 
-    teardownBatteryPicker()
-    document.body.innerHTML = '<div id="app"></div>'
-    const host = document.getElementById('app') as HTMLElement
-    renderShell(host)
-    const newRegion = document.getElementById('drop-zone-region') as HTMLElement
-    initBatteryPicker(newRegion)
+    const newRegion = resetPickerDOM()
 
     const capNote = newRegion.querySelector('.picker-cap-note') as HTMLElement
     expect(capNote).not.toBeNull()
@@ -230,5 +234,88 @@ describe('initBatteryPicker DOM contract', () => {
     // Check that no child elements have a style attribute
     const allElements = pickerSection.querySelectorAll('[style]')
     expect(allElements.length).toBe(0)
+  })
+
+  // ── (e) Custom card swatch — slot matches table; hidden when no valid battery ────
+
+  it('custom card swatch is hidden when no valid custom battery is set', () => {
+    // customBattery is null by default (set in beforeEach)
+    const customCard = region.querySelector('[data-battery-id="custom"]') as HTMLElement
+    const swatch = customCard.querySelector('.battery-card__swatch') as HTMLElement
+    expect(swatch).not.toBeNull()
+    expect(swatch.hidden).toBe(true)
+  })
+
+  it('custom card swatch slot matches comparison table slot for the same selection (COMP-04)', () => {
+    // Arrange: one catalog battery selected + a valid custom battery
+    selectedBatteries.value = [BATTERY_CATALOG[0]] // sessy-5 at slot 1
+
+    customBattery.value = {
+      id: 'custom',
+      name: 'Eigen batterij',
+      nominalCapacityKwh: 10,
+      dodFraction: 1,
+      roundTripEfficiency: 0.85,
+      maxChargeKw: 2.2,
+      maxDischargeKw: 1.7,
+    }
+
+    // Re-setup so the effect fires with the fresh signal state
+    const newRegion = resetPickerDOM()
+
+    const customCard = newRegion.querySelector('[data-battery-id="custom"]') as HTMLElement
+    const swatch = customCard.querySelector('.battery-card__swatch') as HTMLElement
+    expect(swatch).not.toBeNull()
+
+    // Swatch must be visible
+    expect(swatch.hidden).toBe(false)
+
+    // Slot must match what the comparison table would compute:
+    // colorSlotFor('custom', activeBatteries.value.map(b => b.id))
+    const expectedSlot = colorSlotFor('custom', activeBatteries.value.map((b) => b.id))
+    const hasExpectedClass = swatch.classList.contains(`battery-swatch--${expectedSlot}`)
+    expect(hasExpectedClass).toBe(true)
+
+    // Must use CSS class only — no inline style (style-src 'self' CSP)
+    expect(swatch.getAttribute('style')).toBeNull()
+  })
+
+  it('custom card swatch is hidden again after customBattery is cleared (null)', () => {
+    // First set a valid custom battery and re-init
+    selectedBatteries.value = [BATTERY_CATALOG[0]]
+    customBattery.value = {
+      id: 'custom',
+      name: 'Eigen batterij',
+      nominalCapacityKwh: 10,
+      dodFraction: 1,
+      roundTripEfficiency: 0.85,
+      maxChargeKw: 2.2,
+      maxDischargeKw: 1.7,
+    }
+    const newRegion = resetPickerDOM()
+
+    const customCard = newRegion.querySelector('[data-battery-id="custom"]') as HTMLElement
+    const swatch = customCard.querySelector('.battery-card__swatch') as HTMLElement
+
+    // Confirm visible first
+    expect(swatch.hidden).toBe(false)
+
+    // Now clear the custom battery (simulating form collapse / clearing)
+    customBattery.value = null
+
+    // The reactive effect fires synchronously in signals-core
+    expect(swatch.hidden).toBe(true)
+  })
+
+  it('custom card swatch has no battery-swatch--N class when hidden', () => {
+    // customBattery is null from beforeEach
+    const customCard = region.querySelector('[data-battery-id="custom"]') as HTMLElement
+    const swatch = customCard.querySelector('.battery-card__swatch') as HTMLElement
+
+    const hasAnySlotClass = Array.from(swatch.classList).some((c) =>
+      c.startsWith('battery-swatch--'),
+    )
+    // When hidden, no slot class should be present (effect strips them)
+    expect(hasAnySlotClass).toBe(false)
   })
 })
