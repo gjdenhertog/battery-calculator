@@ -3,11 +3,19 @@ import './styles/drop-zone.css' // Phase 2: drop-zone state CSS
 import './styles/battery-picker.css' // Phase 4: battery spec-card picker
 import './styles/comparison-table.css' // Phase 4: comparison table + saldering columns
 import './styles/results-region.css' // Phase 4: results region layout + cadence banner
+import './styles/charts.css' // Phase 5: chart section + wrapper + legend
+import './styles/tooltips.css' // Phase 5: term-tooltip CSS-class-based show/hide
+import './styles/transparency-panel.css' // Phase 5: collapsible assumptions panel
+import './styles/mobile-reflow.css' // Phase 5: @media (max-width: 480px) stacked cards + chart height
 import { renderShell } from './shell'
 import { initDropZone } from './ui/drop-zone'
 import { initBatteryPicker } from './ui/battery-picker'
 import { initPeriodControl } from './ui/period-control'
 import { initComparisonTable } from './ui/comparison-table'
+import { initMonthlyBarsChart } from './ui/charts/monthly-bars'
+import { initFlowChart } from './ui/charts/flow-chart'
+import { renderTransparencyPanel } from './ui/transparency-panel'
+import { initTooltips } from './ui/tooltips'
 // app-state module self-initializes the Comlink worker singleton on import
 // (transitively pulled in by battery-picker, period-control, comparison-table)
 
@@ -46,7 +54,31 @@ if (resultsRegion) {
   resultsRegion.appendChild(comparisonTableMount)
   // Capture the dispose function so it can be called on HMR teardown (WR-01).
   const disposeComparisonTable = initComparisonTable(comparisonTableMount)
+
+  // Phase 5: monthly bars chart — appended AFTER comparison-table-mount (UI-SPEC order)
+  const monthlyChartMount = document.createElement('div')
+  monthlyChartMount.id = 'monthly-chart-mount'
+  resultsRegion.appendChild(monthlyChartMount)
+  const disposeMonthlyBars = initMonthlyBarsChart(monthlyChartMount)
+
+  // Phase 5: sample-week energy flow step-line chart — appended after monthly bars
+  const flowChartMount = document.createElement('div')
+  flowChartMount.id = 'flow-chart-mount'
+  resultsRegion.appendChild(flowChartMount)
+  const disposeFlowChart = initFlowChart(flowChartMount)
+
+  // Phase 5: transparency panel — static DOM builder, no signals; appended after charts
+  const panel = renderTransparencyPanel()
+  resultsRegion.appendChild(panel)
+
+  // Phase 5: tooltip wiring — document-level tap-toggle + Escape handling
+  initTooltips()
+
   if (import.meta.hot) {
-    import.meta.hot.dispose(() => disposeComparisonTable())
+    import.meta.hot.dispose(() => {
+      disposeComparisonTable()
+      disposeMonthlyBars()
+      disposeFlowChart()
+    })
   }
 }
