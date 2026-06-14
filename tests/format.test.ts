@@ -6,7 +6,7 @@
  * nl-NL date formatting behaviours.
  */
 import { describe, it, expect } from 'vitest'
-import { formatKwh, formatPct, formatRatio, formatDate, formatCount } from '../src/helpers/format'
+import { formatKwh, formatPct, formatRatio, formatDate, formatCount, formatAxisKwh } from '../src/helpers/format'
 
 describe('formatKwh', () => {
   it('formats a positive value to exactly 1 decimal place with kWh suffix', () => {
@@ -78,5 +78,28 @@ describe('formatCount', () => {
 
   it('formats small numbers without separator', () => {
     expect(formatCount(100)).toBe('100')
+  })
+})
+
+describe('formatAxisKwh', () => {
+  it('formats 3.14159 to "3.1" (1 decimal, no kWh suffix)', () => {
+    expect(formatAxisKwh(3.14159)).toBe('3.1')
+  })
+
+  it('formats 0 to "0.0"', () => {
+    expect(formatAxisKwh(0)).toBe('0.0')
+  })
+
+  it('formats a whole number to 1 decimal place', () => {
+    expect(formatAxisKwh(5)).toBe('5.0')
+  })
+
+  it('formats a negative value to 1 decimal place', () => {
+    expect(formatAxisKwh(-2.7)).toBe('-2.7')
+  })
+
+  it('does NOT include a kWh suffix', () => {
+    const result = formatAxisKwh(12.3)
+    expect(result).not.toContain('kWh')
   })
 })

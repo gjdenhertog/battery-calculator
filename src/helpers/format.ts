@@ -33,3 +33,8 @@ export function formatDate(d: Date): string {
 export function formatCount(n: number): string {
   return n.toLocaleString('nl-NL')
 }
+
+/** Format an energy value to 1 decimal place WITHOUT kWh suffix — for uPlot axis ticks (VIZ-04) */
+export function formatAxisKwh(n: number): string {
+  return n.toFixed(1)
+}
