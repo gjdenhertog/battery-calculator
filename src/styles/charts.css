@@ -1,0 +1,113 @@
+/* src/styles/charts.css */
+/* Chart section, wrapper, legend, caption, partial-label, sparse-note classes. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* NOTE: .results-section-heading is defined in results-region.css — do NOT redefine here. */
+/* NOTE: .battery-swatch--N is defined in comparison-table.css — reused for legend swatches. */
+
+/* ── Chart section container ──────────────────────────────────────────────── */
+.chart-section {
+  margin-top: var(--space-xl);
+}
+
+/* ── Chart section header (heading + dropdown label row) ─────────────────── */
+.chart-section__header {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+/* ── Chart canvas wrapper ─────────────────────────────────────────────────── */
+.chart-wrapper {
+  width: 100%;
+  height: 280px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden; /* contain the uPlot canvas */
+}
+
+/* ── Battery select dropdown (flow chart) ────────────────────────────────── */
+.chart-battery-select {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  min-height: 44px; /* WCAG 2.5.5 touch target */
+}
+
+.chart-battery-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.chart-battery-select__label {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* ── Week caption (flow chart) ───────────────────────────────────────────── */
+.chart-week-caption {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Partial-month "(deels)" annotation ──────────────────────────────────── */
+.chart-partial-label {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+/* ── Sparse-data note (< 2 full months) ──────────────────────────────────── */
+.chart-sparse-note {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  padding: var(--space-sm);
+  border-radius: 4px;
+  margin-top: var(--space-sm);
+}
+
+/* ── Chart legend (below canvas, HTML-rendered for CSP + accessibility) ───── */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* .chart-legend__swatch reuses .battery-swatch--N for CSS class-based coloring */
+.chart-legend__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart-legend__label {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+/* ── Computing state — dim while worker is running (mirrors .results-stale) ─ */
+.chart-wrapper--computing {
+  opacity: 0.5;
+  pointer-events: none;
+}

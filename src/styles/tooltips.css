@@ -1,0 +1,50 @@
+/* src/styles/tooltips.css */
+/* Dotted-underline term tooltip via ::after pseudo-element. */
+/* No inline styles anywhere — required by style-src 'self' CSP (D-03). */
+/* Note: position: absolute on ::after is a CSS pseudo-element declaration — CSP-safe. */
+
+/* ── Term tooltip base ────────────────────────────────────────────────────── */
+.term-tooltip {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+  position: relative;
+}
+
+/* ── Tooltip bubble (CSS ::after pseudo-element — no JS positioning) ─────── */
+.term-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + var(--space-xs));
+  left: 0;
+  background-color: var(--color-text);
+  color: var(--color-bg);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.4;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
+  white-space: normal;
+  max-width: 280px;
+  min-width: 160px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: none; /* no CSS transitions — style-src 'self' safe */
+}
+
+/* ── Desktop hover ────────────────────────────────────────────────────────── */
+.term-tooltip:hover::after {
+  opacity: 1;
+}
+
+/* ── Keyboard focus ───────────────────────────────────────────────────────── */
+.term-tooltip:focus-visible::after {
+  opacity: 1;
+}
+
+/* ── Mobile tap-toggle via JS class ──────────────────────────────────────── */
+.term-tooltip--open::after {
+  opacity: 1;
+}
