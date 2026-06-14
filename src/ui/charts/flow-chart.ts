@@ -12,8 +12,8 @@
  * (selectRepresentativeWeek from Plan 01). Step lines NEVER use smooth interpolation (VIZ-03).
  *
  * XSS safety: ALL user-derived strings (custom battery name) use .textContent — never .innerHTML.
- * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP).
- * No built-in uPlot tooltip (Pitfall 4 — would inject inline style, violating CSP).
+ * Hover readout uses a custom DOM tooltip (chart-tooltip.ts) positioned via CSSOM
+ * (el.style.*), which style-src 'self' does NOT block — only parsed inline styles do.
  *
  * CSP note: uPlot.min.css is a class-only same-origin bundled stylesheet (no inline-style
  * injection, no url()/@import network fetch) — imported unconditionally per plan spec.
@@ -25,9 +25,23 @@ import 'uplot/dist/uPlot.min.css'
 import { effect } from '@preact/signals-core'
 import { simResults, activeBatteries, isComputing } from '../../state/app-state'
 import { colorFor } from '../../helpers/color'
-import { formatAxisKwh } from '../../helpers/format'
+import { formatAxisKwh, formatKwh } from '../../helpers/format'
 import { selectRepresentativeWeek } from '../../domain/select-representative-week'
 import type { BatteryConfig, TraceRow } from '../../domain/types'
+import { hoverTooltipPlugin } from './chart-tooltip'
+
+// Series labels (fixed order, matches buildFlowData rows 1..4)
+const SERIES_LABELS = ['Grid import', 'Teruglevering', 'Laden', 'Ontladen'] as const
+
+// Amsterdam-local short date+time formatter for the hover tooltip title.
+const TOOLTIP_TIME_FMT = new Intl.DateTimeFormat('nl-NL', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Amsterdam',
+})
 
 // IANA timezone — always Amsterdam for production (D-03)
 const ZONE = 'Europe/Amsterdam'
@@ -61,9 +75,11 @@ function resolveBatteryColor(batteryId: string, orderedIds: string[]): string {
 
 /**
  * Resolve a CSS custom property name (without var()) to its hex value.
+ * Returns '' when unresolved so callers' `|| FALLBACK_HEX` engages — returning
+ * the var name itself would be an invalid color (e.g. an uncolored swatch).
  */
 function resolveCssVar(varName: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || varName
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || ''
 }
 
 // ---------------------------------------------------------------------------
@@ -180,9 +196,11 @@ function buildLegend(
 
     const swatch = document.createElement('span')
     swatch.className = 'chart-legend__swatch'
-    // Use data-series-color attribute for color — CSS can consume it via attr()
-    // No inline style= used (CSP style-src 'self' compliance; canvas series colors are CSP-exempt)
-    swatch.setAttribute('data-series-color', s.color)
+    // CSS attr() only works for `content`, never background-color — the previous
+    // data-series-color approach left swatches colorless. Set the color via CSSOM
+    // (el.style.*), which is NOT blocked by style-src 'self' (only parsed inline
+    // styles / setAttribute('style') are). Matches the canvas series stroke.
+    swatch.style.backgroundColor = s.color
 
     const labelEl = document.createElement('span')
     labelEl.className = 'chart-legend__label'
@@ -236,11 +254,44 @@ function buildFlowOpts(
   battery: BatteryConfig,
   orderedIds: string[],
   containerWidth: number,
+  wrapper: HTMLElement,
 ): uPlot.Options {
   const steppedBuilder = uPlot.paths.stepped!({ align: 1 }) // step-after (VIZ-03)
   const batteryColor = resolveBatteryColor(battery.id, orderedIds)
   // Try to resolve muted color from CSS vars; fall back to hardcoded value
   const mutedColor = resolveCssVar('--color-text-muted') || COLOR_TERUGLEVERING
+
+  // Series colors in data order (rows 1..4 of buildFlowData) — drives both the
+  // canvas strokes and the hover-tooltip swatches.
+  const seriesColors = [batteryColor, mutedColor, COLOR_LADEN, COLOR_ONTLADEN]
+
+  // Hover tooltip: hovered time + all four series values, nearest one emphasised.
+  const flowTooltip = hoverTooltipPlugin(wrapper, (u, idx, _xVal, yVal) => {
+    const xs = u.data[0]
+    if (!xs || idx < 0 || idx >= xs.length) return null
+    const title = TOOLTIP_TIME_FMT.format(new Date((xs[idx] as number) * 1000))
+    // Emphasise the series whose value at idx is closest to the pointer's y.
+    let emph = -1
+    let best = Infinity
+    for (let s = 1; s <= 4; s++) {
+      const v = u.data[s]?.[idx]
+      if (v == null) continue
+      const d = Math.abs((v as number) - yVal)
+      if (d < best) {
+        best = d
+        emph = s
+      }
+    }
+    return {
+      title,
+      rows: SERIES_LABELS.map((label, k) => ({
+        label,
+        value: formatKwh((u.data[k + 1]?.[idx] ?? 0) as number),
+        color: seriesColors[k],
+        emphasis: k + 1 === emph,
+      })),
+    }
+  })
 
   return {
     width: containerWidth,
@@ -288,8 +339,9 @@ function buildFlowOpts(
         label: 'kWh',
       },
     ],
-    legend: { show: false }, // Custom DOM legend (CSP safety, Pitfall 4)
-    cursor: { show: false }, // No built-in cursor/tooltip (CSP safety, Pitfall 4)
+    legend: { show: false }, // Custom DOM legend (CSP safety)
+    cursor: { show: true }, // CSP-safe crosshair; drives the hover tooltip
+    plugins: [flowTooltip],
     padding: [8, 0, 0, 0],
   }
 }
@@ -404,7 +456,7 @@ export function initFlowChart(container: HTMLElement): () => void {
       } else {
         // First render or after teardown: create uPlot
         chartWrapper.innerHTML = ''
-        const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600)
+        const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600, chartWrapper)
         chart = new uPlot(opts, data, chartWrapper)
       }
     } catch {
@@ -461,7 +513,7 @@ export function initFlowChart(container: HTMLElement): () => void {
       chartWrapper.innerHTML = ''
     }
 
-    const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600)
+    const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600, chartWrapper)
     chart = new uPlot(opts, data, chartWrapper)
   }
 

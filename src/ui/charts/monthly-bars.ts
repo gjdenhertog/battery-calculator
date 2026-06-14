@@ -8,7 +8,8 @@
  * Sparse data (< 2 full months) renders with a "Weinig data" note (D-06).
  *
  * XSS safety: ALL user-derived strings (custom battery name) use .textContent — never .innerHTML.
- * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP).
+ * Hover readout uses a custom DOM tooltip (chart-tooltip.ts) positioned via CSSOM
+ * (el.style.*), which style-src 'self' does NOT block — only parsed inline styles do.
  *
  * CSP note: uPlot.min.css is a class-only same-origin bundled stylesheet (no inline-style
  * injection, no url()/@import network fetch) — imported unconditionally per plan spec.
@@ -20,10 +21,11 @@ import 'uplot/dist/uPlot.min.css'
 import { effect } from '@preact/signals-core'
 import { simResults, activeBatteries, isComputing } from '../../state/app-state'
 import { colorFor, colorSlotFor } from '../../helpers/color'
-import { formatAxisKwh } from '../../helpers/format'
+import { formatAxisKwh, formatKwh } from '../../helpers/format'
 import { bucketByMonth } from '../../domain/bucket-by-month'
 import type { MonthBucket } from '../../domain/bucket-by-month'
 import type { BatteryConfig } from '../../domain/types'
+import { hoverTooltipPlugin } from './chart-tooltip'
 
 // IANA timezone — always Amsterdam for production (D-04)
 const ZONE = 'Europe/Amsterdam'
@@ -35,6 +37,14 @@ const CHART_HEIGHT = 280
 // Applied via disp.fill per bar (Pattern 3b / D-05)
 const FULL_OPACITY = 0.8
 const PARTIAL_OPACITY = 0.4
+
+// Grouped-bar geometry (in x-scale data units, where each month = 1 unit).
+// uPlot does NOT auto-offset multiple bars() series — they overlap unless we
+// position each battery's bars ourselves via disp.x0/disp.size (the published
+// facet API). GROUP_W is the share of a month slot the cluster occupies; the
+// rest is the inter-month gap. INNER_GAP_FRAC adds a thin gap between bars.
+const GROUP_W = 0.8
+const INNER_GAP_FRAC = 0.12
 
 // ---------------------------------------------------------------------------
 // Color resolution (Pattern 7 / Pitfall 2)
@@ -199,36 +209,59 @@ function buildBarData(
 
 /**
  * Build uPlot opts for the grouped-bar chart.
- * One bars() series per battery with isPartial-driven disp.fill (Pattern 3b).
+ * One bars() series per battery; each battery's bars are offset side-by-side
+ * within the month slot via disp.x0/disp.size (uPlot does not auto-group).
  */
 function buildBarOpts(
   batteries: BatteryConfig[],
   allBuckets: MonthBucket[][],
   containerWidth: number,
+  wrapper: HTMLElement,
 ): uPlot.Options {
   const orderedIds = batteries.map((b) => b.id)
   // Use first battery's buckets for month labels (all batteries share same months)
   const primaryBuckets = allBuckets[0] ?? []
   const monthLabels = primaryBuckets.map((b) => b.monthLabel)
+  const monthCount = primaryBuckets.length
+
+  // Solid per-battery colors (match the comparison-table legend swatches).
+  const resolvedColors = batteries.map((b) => resolveBatteryColor(b.id, orderedIds))
+
+  // Group geometry (data units): each battery gets an equal sub-slot.
+  const n = Math.max(1, batteries.length)
+  const subW = GROUP_W / n
+  const barW = subW * (1 - INNER_GAP_FRAC)
+
+  // Helper: a disp-facet values() that honours uPlot's [idx0..idx1] range.
+  const rangeValues =
+    <T>(fn: (k: number) => T) =>
+    (_u: uPlot, _seriesIdx: number, idx0: number, idx1: number): T[] => {
+      const out: T[] = []
+      for (let k = idx0; k <= idx1; k++) out.push(fn(k))
+      return out
+    }
 
   // Build per-battery series
   const series: uPlot.Series[] = [
     {}, // x-axis placeholder (required by uPlot)
     ...batteries.map((battery, i) => {
       const buckets = allBuckets[i] ?? primaryBuckets
-      const resolvedHex = resolveBatteryColor(battery.id, orderedIds)
+      const resolvedHex = resolvedColors[i]
       const fullColor = hexToRgba(resolvedHex, FULL_OPACITY)
       const partialColor = hexToRgba(resolvedHex, PARTIAL_OPACITY)
+      // Left edge of this battery's bar within month-slot m (centered cluster).
+      const x0For = (k: number) => k - GROUP_W / 2 + i * subW + (subW - barW) / 2
 
-      // One bars() builder per battery with disp.fill keyed off isPartial (Pattern 3b)
+      // One bars() builder per battery: disp.x0 + disp.size group them
+      // side-by-side; disp.fill applies isPartial opacity (Pattern 3b / D-05).
       const barsBuilder = uPlot.paths.bars!({
-        size: [0.6, 60],
         align: 0,
         disp: {
+          x0: { unit: 1, values: rangeValues(x0For) }, // ScaleValue: x data units
+          size: { unit: 1, values: rangeValues(() => barW) },
           fill: {
             unit: 3, // raw CSS-color values, per data index
-            values: (_u: uPlot, _seriesIdx: number) =>
-              buckets.map((b) => (b.isPartial ? partialColor : fullColor)),
+            values: rangeValues((k) => (buckets[k]?.isPartial ? partialColor : fullColor)),
           },
         },
       })
@@ -244,13 +277,36 @@ function buildBarOpts(
     }),
   ]
 
+  // Hover tooltip: hovered month + every battery's value, hovered bar emphasised.
+  const barTooltip = hoverTooltipPlugin(wrapper, (_u, _idx, xVal) => {
+    if (monthCount === 0) return null
+    const mi = Math.max(0, Math.min(monthCount - 1, Math.round(xVal)))
+    // Which battery sub-slot is the pointer over? (data-space → slot index)
+    const offsetInGroup = xVal - (mi - GROUP_W / 2)
+    const emph = Math.max(0, Math.min(n - 1, Math.floor(offsetInGroup / subW)))
+    return {
+      title: monthLabels[mi] ?? '',
+      rows: batteries.map((b, i) => ({
+        label: b.name,
+        value: formatKwh(allBuckets[i]?.[mi]?.shiftedKwh ?? 0),
+        color: resolvedColors[i],
+        emphasis: i === emph,
+      })),
+    }
+  })
+
   return {
     width: containerWidth,
     height: CHART_HEIGHT,
     series,
+    scales: {
+      // Pad x so the outer half-bars of the first/last month aren't clipped.
+      x: { range: () => [-0.5 - GROUP_W / 2, monthCount - 1 + 0.5 + GROUP_W / 2] },
+    },
     axes: [
       {
-        // x-axis: ordinal months mapped to NL month labels (Pattern 3a)
+        // x-axis: one tick per month, centered under each cluster (Pattern 3a)
+        splits: () => Array.from({ length: monthCount }, (_v, i) => i),
         values: (_u: uPlot, splits: number[]) =>
           splits.map((i) => monthLabels[Math.round(i)] ?? ''),
       },
@@ -261,7 +317,8 @@ function buildBarOpts(
       },
     ],
     legend: { show: false }, // We render our own DOM legend (CSP safety)
-    cursor: { show: false }, // No built-in cursor/tooltip (CSP safety, Pitfall 4)
+    cursor: { show: true }, // CSP-safe crosshair; drives the hover tooltip
+    plugins: [barTooltip],
     padding: [8, 0, 0, 0],
   }
 }
@@ -351,7 +408,7 @@ export function initMonthlyBarsChart(container: HTMLElement): () => void {
         }
         // Clear any previous uPlot canvas from the wrapper
         chartWrapper.innerHTML = ''
-        const opts = buildBarOpts(batteries, allBuckets, chartWrapper.offsetWidth || 600)
+        const opts = buildBarOpts(batteries, allBuckets, chartWrapper.offsetWidth || 600, chartWrapper)
         chart = new uPlot(opts, data, chartWrapper)
         lastBatteryCount = batteryCount
       }

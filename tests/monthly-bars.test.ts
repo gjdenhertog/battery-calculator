@@ -241,6 +241,36 @@ describe('initMonthlyBarsChart DOM contract', () => {
     expect(MockUPlot.paths.bars).toHaveBeenCalledTimes(2)
   })
 
+  it('offsets each battery side-by-side via disp.x0 + disp.size (true grouping, not overlap)', () => {
+    selectedBatteries.value = [BATTERY_CATALOG[0], BATTERY_CATALOG[1]]
+    dispose = initMonthlyBarsChart(container)
+    simResults.value = [makeSimResult(), makeSimResult()]
+
+    // Each bars() builder must receive a disp with BOTH x0 and size facets —
+    // that is the published mechanism that places battery bars next to each
+    // other within a month. Without it, uPlot draws all series at the same x.
+    const dispA = MockUPlot.paths.bars.mock.calls[0][0]?.disp
+    const dispB = MockUPlot.paths.bars.mock.calls[1][0]?.disp
+    expect(dispA?.x0).toBeDefined()
+    expect(dispA?.size).toBeDefined()
+    expect(dispB?.x0).toBeDefined()
+
+    // The two batteries must resolve to DIFFERENT left edges at month 0 → no overlap.
+    const x0A = dispA.x0.values({}, 1, 0, 0)[0]
+    const x0B = dispB.x0.values({}, 2, 0, 0)[0]
+    expect(x0A).not.toBeCloseTo(x0B, 5)
+  })
+
+  it('enables a CSP-safe cursor and registers the hover-tooltip plugin', () => {
+    dispose = initMonthlyBarsChart(container)
+    simResults.value = [makeSimResult()]
+
+    const opts = MockUPlot.mock.calls[0][0]
+    expect(opts.cursor?.show).toBe(true)
+    expect(Array.isArray(opts.plugins)).toBe(true)
+    expect(opts.plugins.length).toBeGreaterThan(0)
+  })
+
   // ── formatAxisKwh routing ─────────────────────────────────────────────────
 
   it('renders legend label using battery name (not raw float)', () => {

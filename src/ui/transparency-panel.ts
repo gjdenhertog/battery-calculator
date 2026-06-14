@@ -45,14 +45,14 @@ const ASSUMPTION_5 =
   'Periode: alle getallen gelden precies voor de periode die je hebt geüpload — ' +
   'er is geen extrapolatie naar een jaar of maand.'
 
-// D-09: "Waarom geen euro's?" — explains why kWh-only is honest; makes NO v2 promise
+// D-09: "Waarom geen euro's?" — explains why kWh-only is honest; makes NO version/v2 promise
 const NO_EUROS_HEADING = "Waarom geen euro's?"
 
 const NO_EUROS_BODY =
   'Om een eerlijk eurobedrag te berekenen, heb je je actuele import- en exporttarief ' +
   'nodig — inclusief terugleverkosten en eventuele dynamische prijzen. Die tariefgegevens ' +
   'hebben we niet, en we willen geen bedragen tonen die van jouw situatie afwijken. ' +
-  'V1 rapporteert kWh: dat getal is voor iedereen gelijk en correct, ongeacht je tarief.'
+  'Daarom rapporteren we kWh: dat getal is voor iedereen gelijk en correct, ongeacht je tarief.'
 
 // ---------------------------------------------------------------------------
 // Builder helpers

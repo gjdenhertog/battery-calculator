@@ -307,4 +307,29 @@ describe('initFlowChart DOM contract', () => {
     const legend = container.querySelector('.chart-legend')
     expect(legend).not.toBeNull()
   })
+
+  it('legend swatches carry an actual background color (CSS attr() never colored them)', () => {
+    dispose = initFlowChart(container)
+    simResults.value = [makeSimResult()]
+
+    const swatches = Array.from(
+      container.querySelectorAll<HTMLElement>('.chart-legend__swatch'),
+    )
+    expect(swatches.length).toBe(4) // grid / teruglevering / laden / ontladen
+    // Every swatch must have a non-empty backgroundColor set via CSSOM —
+    // the old data-series-color attr() approach left them transparent.
+    for (const sw of swatches) {
+      expect(sw.style.backgroundColor).not.toBe('')
+    }
+  })
+
+  it('enables a CSP-safe cursor and registers the hover-tooltip plugin', () => {
+    dispose = initFlowChart(container)
+    simResults.value = [makeSimResult()]
+
+    const opts = MockUPlot.mock.calls[0][0]
+    expect(opts.cursor?.show).toBe(true)
+    expect(Array.isArray(opts.plugins)).toBe(true)
+    expect(opts.plugins.length).toBeGreaterThan(0)
+  })
 })
