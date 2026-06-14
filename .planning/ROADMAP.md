@@ -107,8 +107,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans (4 autonomous, 1 with live human-verify)
 - [x] 05-01-PLAN.md — Wave 0 gate: install uPlot + pure helpers bucketByMonth/selectRepresentativeWeek + formatAxisKwh, node-env fixtures (VIZ-01/02/04)
 - [x] 05-02-PLAN.md — Four new CSS files + terminology/no-CTA CI grep audits (UX-04 reflow CSS, UX-05, UX-06)
-- [ ] 05-03-PLAN.md — uPlot chart DOM adapters: monthly bars + sample-week step-line flow chart with dropdown (VIZ-01/02/03/04)
-- [ ] 05-04-PLAN.md — Transparency panel + "Waarom geen euro's?" + technical-term tooltips (UX-01/02/03)
+- [x] 05-03-PLAN.md — uPlot chart DOM adapters: monthly bars + sample-week step-line flow chart with dropdown (VIZ-01/02/03/04)
+- [x] 05-04-PLAN.md — Transparency panel + "Waarom geen euro's?" + technical-term tooltips (UX-01/02/03)
 - [ ] 05-05-PLAN.md — Wire main.ts (CSS imports + chart/panel/tooltip mounts) + live human-verify (charts, colors, step lines, 375px reflow)
 **UI hint**: yes
 
@@ -135,5 +135,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. CSV Parsing, Format Detection, Multi-file Merge, DST-safe Time Series | 4/4 | Complete   | 2026-06-09 |
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 8/8 | Complete   | 2026-06-14 |
-| 5. Visualizations, Polish, Transparent-Assumptions UI | 2/5 | In Progress|  |
+| 5. Visualizations, Polish, Transparent-Assumptions UI | 4/5 | In Progress|  |
 | 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 0/TBD | Not started | - |
