@@ -76,7 +76,7 @@ export const computeError = signal<string | null>(null)
  * Delegates to filterByPeriod — returns the full set when both bounds are null.
  */
 export const filteredSamples = computed(() =>
-  filterByPeriod(parsedSamples.value, periodFrom.value, periodTo.value),
+  filterByPeriod(parsedSamples.value, periodFrom.value, periodTo.value)
 )
 
 /**
@@ -86,9 +86,7 @@ export const filteredSamples = computed(() =>
 export const coverageDays = computed(() => {
   const s = filteredSamples.value
   if (s.length < 2) return 0
-  return Math.ceil(
-    (s[s.length - 1].timestamp.getTime() - s[0].timestamp.getTime()) / 86_400_000,
-  )
+  return Math.ceil((s[s.length - 1].timestamp.getTime() - s[0].timestamp.getTime()) / 86_400_000)
 })
 
 /**
@@ -98,8 +96,6 @@ export const coverageDays = computed(() => {
  * Array order among customs is preserved — no sorting (D-05).
  */
 export const activeBatteries = computed(() => {
-  const validCustoms = customBatteries.value.filter(
-    (cb) => (cb.nominalCapacityKwh ?? 0) > 0,
-  )
+  const validCustoms = customBatteries.value.filter((cb) => (cb.nominalCapacityKwh ?? 0) > 0)
   return [...selectedBatteries.value, ...validCustoms]
 })

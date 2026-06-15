@@ -28,7 +28,7 @@ const AMSTERDAM = 'Europe/Amsterdam'
  */
 export function detectGaps(
   samples: IntervalSample[],
-  cadenceMinutes: number,
+  cadenceMinutes: number
 ): { count: number; ranges: Array<{ from: Date; to: Date }> } {
   if (samples.length <= 1) {
     return { count: 0, ranges: [] }

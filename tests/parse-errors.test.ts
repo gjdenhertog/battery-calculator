@@ -49,7 +49,7 @@ describe('parseFile() — malformed row produces ParseRowError', () => {
       '2026-01-15 00:15,8354.5xyz,4651.000,3095.000,7482.000',
     ].join('\n')
     await expect(parseFile(makeFile(csv, 'partial-garbage.csv'))).rejects.toBeInstanceOf(
-      ParseRowError,
+      ParseRowError
     )
   })
 
@@ -126,7 +126,7 @@ describe('parseFile() — unknown format', () => {
       '2026-01-02,6.000,1.000',
     ].join('\n')
     await expect(parseFile(makeFile(csv, 'unknown.csv'))).rejects.toThrow(
-      /Onbekend bestandsformaat.*unknown\.csv/,
+      /Onbekend bestandsformaat.*unknown\.csv/
     )
   })
 })

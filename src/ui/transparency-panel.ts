@@ -62,13 +62,7 @@ function buildAssumptionsList(): HTMLElement {
   const ul = document.createElement('ul')
   ul.className = 'assumptions-list'
 
-  const assumptions = [
-    ASSUMPTION_1,
-    ASSUMPTION_2,
-    ASSUMPTION_3,
-    ASSUMPTION_4,
-    ASSUMPTION_5,
-  ]
+  const assumptions = [ASSUMPTION_1, ASSUMPTION_2, ASSUMPTION_3, ASSUMPTION_4, ASSUMPTION_5]
 
   for (const copy of assumptions) {
     const li = document.createElement('li')

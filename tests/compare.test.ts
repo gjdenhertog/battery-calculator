@@ -35,10 +35,12 @@ const INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
  * Odd-indexed:  0.4 kWh import (demand → battery discharges)
  * 8 intervals = 4 charge + 4 discharge rounds
  */
-const SAMPLES: IntervalSample[] = Array.from({ length: 8 }, (_, i) =>
-  i % 2 === 0
-    ? sample(T0 + i * INTERVAL_MS, 0.0, 0.5)   // surplus: export=0.5, import=0
-    : sample(T0 + i * INTERVAL_MS, 0.4, 0.0),  // demand: import=0.4, export=0
+const SAMPLES: IntervalSample[] = Array.from(
+  { length: 8 },
+  (_, i) =>
+    i % 2 === 0
+      ? sample(T0 + i * INTERVAL_MS, 0.0, 0.5) // surplus: export=0.5, import=0
+      : sample(T0 + i * INTERVAL_MS, 0.4, 0.0) // demand: import=0.4, export=0
 )
 
 /**
@@ -51,7 +53,7 @@ const CUSTOM_BATTERY: BatteryConfig = {
   name: 'Custom Tiny 1 kWh',
   nominalCapacityKwh: 1.0,
   dodFraction: 1.0,
-  roundTripEfficiency: 0.80,
+  roundTripEfficiency: 0.8,
   maxChargeKw: 0.5,
   maxDischargeKw: 0.5,
   datasheetUrl: 'https://example.com/custom-tiny',

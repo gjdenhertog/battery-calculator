@@ -62,8 +62,7 @@ describe('renderTransparencyPanel DOM contract', () => {
     const el = renderTransparencyPanel()
     const items = Array.from(el.querySelectorAll('.assumptions-list li'))
     const salderingLi = items.find(
-      (li) =>
-        li.textContent?.includes('2027') || li.textContent?.includes('terugleverkosten'),
+      (li) => li.textContent?.includes('2027') || li.textContent?.includes('terugleverkosten')
     )
     expect(salderingLi).not.toBeUndefined()
   })

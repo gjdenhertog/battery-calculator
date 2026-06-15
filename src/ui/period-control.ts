@@ -163,7 +163,7 @@ export function initPeriodControl(container: HTMLElement): void {
       // Default both values to the full range (D-19)
       if (!fromInput.value) fromInput.value = minStr
       if (!toInput.value) toInput.value = maxStr
-    }),
+    })
   )
 
   // ── Event: "Van" change ────────────────────────────────────────────────────
@@ -203,6 +203,6 @@ export function initPeriodControl(container: HTMLElement): void {
     effect(() => {
       const days = coverageDays.value
       updateCoverageIndicator(coverageP, days)
-    }),
+    })
   )
 }

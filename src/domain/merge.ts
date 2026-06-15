@@ -57,7 +57,7 @@ export function mergeFiles(results: ParseFileResult[]): MergeResult {
 
   // Sort merged samples ascending by timestamp
   const mergedSamples = [...merged.values()].sort(
-    (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
   )
 
   // Infer dominant cadence from the merged series (median inter-sample delta in minutes)
@@ -98,7 +98,7 @@ export function mergeFiles(results: ParseFileResult[]): MergeResult {
  */
 function inferDominantCadence(
   mergedSamples: IntervalSample[],
-  sortedResults: ParseFileResult[],
+  sortedResults: ParseFileResult[]
 ): number {
   // Use the finest file's declared cadence if available (most reliable)
   if (sortedResults.length > 0) {

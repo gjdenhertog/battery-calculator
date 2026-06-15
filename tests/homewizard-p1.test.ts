@@ -32,7 +32,7 @@ function makeRow(
   importT1: string,
   importT2: string,
   exportT1: string,
-  exportT2: string,
+  exportT2: string
 ): Record<string, string> {
   return {
     time,
@@ -182,7 +182,13 @@ describe('HomeWizard P1 Parser — decimal comma handling', () => {
       makeRow('2026-01-15 00:00', '8354,000', '0,000', '0,000', '0,000'),
       makeRow('2026-01-15 00:15', '8354,100', '0,000', '0,000', '0,000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     const result = adapter.transform(rows, makeFile())
     expect(result.samples[0].gridImportKwh).toBeCloseTo(0.1, 5)
   })
@@ -196,7 +202,13 @@ describe('HomeWizard P1 Parser — decimal comma handling', () => {
       makeRow('2026-01-15 00:00', '8354.542', '4651.780', '3095.875', '7482.698'),
       makeRow('2026-01-15 00:15', '8354.590', '4651.780', '3095.899', '7482.698'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     const commaResult = adapter.transform(rowsComma, makeFile())
     const dotResult = adapter.transform(rowsDot, makeFile())
     expect(commaResult.samples[0].gridImportKwh).toBeCloseTo(dotResult.samples[0].gridImportKwh, 5)
@@ -215,7 +227,13 @@ describe('HomeWizard P1 Parser — timestamp UTC conversion (DATA-07)', () => {
       makeRow('2026-01-15 11:45', '100.000', '0.000', '0.000', '0.000'),
       makeRow('2026-01-15 12:00', '100.100', '0.000', '0.000', '0.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     const result = adapter.transform(rows, makeFile())
     const ts = result.samples[0].timestamp
     // 2026-01-15 12:00 Amsterdam (UTC+1) = 2026-01-15 11:00 UTC
@@ -231,7 +249,13 @@ describe('HomeWizard P1 Parser — timestamp UTC conversion (DATA-07)', () => {
       makeRow('2026-01-15 00:00', '100.000', '0.000', '0.000', '0.000'),
       makeRow('2026-01-15 00:15', '100.100', '0.000', '0.000', '0.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     const result = adapter.transform(rows, makeFile())
     expect(result.samples[0].timestamp).toBeInstanceOf(Date)
   })
@@ -247,7 +271,13 @@ describe('HomeWizard P1 Parser — ParseRowError on malformed data (D-06)', () =
       makeRow('2026-01-15 00:00', '8354.000', '0.000', '0.000', '0.000'),
       makeRow('2026-01-15 00:15', 'NIET-NUMERIEK', '0.000', '0.000', '0.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     expect(() => adapter.transform(rows, makeFile('energy.csv'))).toThrow(ParseRowError)
   })
 
@@ -256,7 +286,13 @@ describe('HomeWizard P1 Parser — ParseRowError on malformed data (D-06)', () =
       makeRow('2026-01-15 00:00', '8354.000', '0.000', '0.000', '0.000'),
       makeRow('2026-01-15 00:15', 'bad-value', '0.000', '0.000', '0.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     try {
       adapter.transform(rows, makeFile('p1-export.csv'))
       expect.fail('Should have thrown ParseRowError')
@@ -275,7 +311,13 @@ describe('HomeWizard P1 Parser — ParseRowError on malformed data (D-06)', () =
       makeRow('2026-01-15 00:00', '8354.000', '0.000', '0.000', '0.000'),
       makeRow('not-a-date', '8354.100', '0.000', '0.000', '0.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     expect(() => adapter.transform(rows, makeFile())).toThrow(ParseRowError)
   })
 })
@@ -324,7 +366,13 @@ describe('HomeWizard P1 Parser — daily granularity tolerance', () => {
       makeDaily('2025-01-02', '5010.000'),
       makeDaily('2025-01-03', '5025.000'),
     ]
-    const adapter = ParserRegistry.claim(['time', 'Import T1 kWh', 'Import T2 kWh', 'Export T1 kWh', 'Export T2 kWh'])!
+    const adapter = ParserRegistry.claim([
+      'time',
+      'Import T1 kWh',
+      'Import T2 kWh',
+      'Export T1 kWh',
+      'Export T2 kWh',
+    ])!
     const result = adapter.transform(rows, makeFile())
     expect(result.samples.length).toBe(2)
     expect(result.samples[0].gridImportKwh).toBeCloseTo(10, 3)

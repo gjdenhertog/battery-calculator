@@ -56,12 +56,7 @@ describe('UX-05 terminology audit', () => {
     // Banned: misleading English / Dutch solar-production terminology.
     // "solar surplus" and "residualExportKwh" are NOT in this list — they are
     // canonical allowed identifiers (internal code use, not UI-facing labels).
-    const banned = [
-      'solar production',
-      'solar generation',
-      'zonne-opwekking',
-      'zonne-opbrengst',
-    ]
+    const banned = ['solar production', 'solar generation', 'zonne-opwekking', 'zonne-opbrengst']
     const hits = findBanned(banned)
     expect(hits, `Banned terminology found in src/:\n${hits.join('\n')}`).toHaveLength(0)
   })

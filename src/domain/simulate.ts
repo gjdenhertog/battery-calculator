@@ -40,7 +40,10 @@ import type { IntervalSample, BatteryConfig, SimResult, SimOptions, TraceRow } f
  * The error message is in Dutch per the project's NL-only v1 constraint.
  */
 export class InvalidBatteryConfigError extends Error {
-  constructor(public readonly field: string, public readonly reason: string) {
+  constructor(
+    public readonly field: string,
+    public readonly reason: string
+  ) {
     super(`Ongeldige batterijconfiguratie: veld "${field}" — ${reason}.`)
     this.name = 'InvalidBatteryConfigError'
   }
@@ -121,37 +124,34 @@ function medianIntervalMinutes(samples: IntervalSample[]): number {
 export function simulate(
   samples: IntervalSample[],
   config: BatteryConfig,
-  options?: SimOptions,
+  options?: SimOptions
 ): SimResult {
   // --- Range-check the custom config (T-03-03, Security V5) ---
   if (config.nominalCapacityKwh <= 0) {
     throw new InvalidBatteryConfigError(
       'nominalCapacityKwh',
-      `moet groter zijn dan 0, was ${config.nominalCapacityKwh}`,
+      `moet groter zijn dan 0, was ${config.nominalCapacityKwh}`
     )
   }
   if (config.dodFraction <= 0 || config.dodFraction > 1) {
     throw new InvalidBatteryConfigError(
       'dodFraction',
-      `moet in (0, 1] liggen, was ${config.dodFraction}`,
+      `moet in (0, 1] liggen, was ${config.dodFraction}`
     )
   }
   if (config.roundTripEfficiency <= 0 || config.roundTripEfficiency > 1) {
     throw new InvalidBatteryConfigError(
       'roundTripEfficiency',
-      `moet in (0, 1] liggen, was ${config.roundTripEfficiency}`,
+      `moet in (0, 1] liggen, was ${config.roundTripEfficiency}`
     )
   }
   if (config.maxChargeKw < 0) {
-    throw new InvalidBatteryConfigError(
-      'maxChargeKw',
-      `moet >= 0 zijn, was ${config.maxChargeKw}`,
-    )
+    throw new InvalidBatteryConfigError('maxChargeKw', `moet >= 0 zijn, was ${config.maxChargeKw}`)
   }
   if (config.maxDischargeKw < 0) {
     throw new InvalidBatteryConfigError(
       'maxDischargeKw',
-      `moet >= 0 zijn, was ${config.maxDischargeKw}`,
+      `moet >= 0 zijn, was ${config.maxDischargeKw}`
     )
   }
 
@@ -170,8 +170,8 @@ export function simulate(
   }
 
   // --- Physics constants ---
-  const usable = config.nominalCapacityKwh * config.dodFraction  // SIM-04 hard cap
-  const eff = Math.sqrt(config.roundTripEfficiency)               // sqrt(rte) each way (SIM-03)
+  const usable = config.nominalCapacityKwh * config.dodFraction // SIM-04 hard cap
+  const eff = Math.sqrt(config.roundTripEfficiency) // sqrt(rte) each way (SIM-03)
 
   // --- Interval durations (D-05) ---
   const hours = intervalHoursFor(samples)
@@ -181,7 +181,7 @@ export function simulate(
   const coarseCadenceWarning = medianIntervalMinutes(samples) > threshold
 
   // --- Dispatch state machine (D-06/D-07, SIM-02/03/04) ---
-  let soc = 0  // state of charge in cell; starts empty (D-06)
+  let soc = 0 // state of charge in cell; starts empty (D-06)
 
   let totalShifted = 0
   let totalResidualImport = 0
@@ -198,7 +198,7 @@ export function simulate(
     totalImport += s.gridImportKwh
     totalExport += s.gridExportKwh
 
-    const net = s.gridExportKwh - s.gridImportKwh  // positive = surplus/charge (D-07)
+    const net = s.gridExportKwh - s.gridImportKwh // positive = surplus/charge (D-07)
 
     let charged = 0
     let discharged = 0
@@ -212,21 +212,21 @@ export function simulate(
       const headroomGridSide = (usable - soc) / eff
       const gridSideCharge = Math.min(net, config.maxChargeKw * h, headroomGridSide)
       const intoCell = gridSideCharge * eff
-      soc = Math.min(soc + intoCell, usable)  // hard cap (SIM-04)
-      charged = gridSideCharge               // grid-side (A-1; criterion 2 expects 0.55)
+      soc = Math.min(soc + intoCell, usable) // hard cap (SIM-04)
+      charged = gridSideCharge // grid-side (A-1; criterion 2 expects 0.55)
       residualExport = s.gridExportKwh - gridSideCharge
-      residualImport = s.gridImportKwh  // preserve real grid draw on mixed intervals (CR-01)
+      residualImport = s.gridImportKwh // preserve real grid draw on mixed intervals (CR-01)
     } else if (net < 0) {
       // ---- Discharge path (net demand) ----
       const demand = -net
       // Maximum deliverable: limited by SoC (pre-loss energy × eff = max deliverable)
       //   and by the discharge power limit
       const delivered = Math.min(demand, soc * eff, config.maxDischargeKw * h)
-      soc -= delivered / eff  // remove the pre-loss cell energy
-      if (soc < 0) soc = 0   // guard floating-point underrun
+      soc -= delivered / eff // remove the pre-loss cell energy
+      if (soc < 0) soc = 0 // guard floating-point underrun
       discharged = delivered
-      residualImport = s.gridImportKwh - delivered  // real import base minus what battery covered (CR-01)
-      residualExport = s.gridExportKwh              // preserve real export on mixed intervals (CR-01)
+      residualImport = s.gridImportKwh - delivered // real import base minus what battery covered (CR-01)
+      residualExport = s.gridExportKwh // preserve real export on mixed intervals (CR-01)
     }
 
     totalShifted += discharged

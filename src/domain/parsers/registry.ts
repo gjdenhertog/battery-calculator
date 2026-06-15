@@ -75,6 +75,6 @@ export const ParserRegistry = {
    * @returns The first matching CsvParser, or null if none match.
    */
   claim(headers: string[]): CsvParser | null {
-    return registry.find(p => p.claim(headers)) ?? null
+    return registry.find((p) => p.claim(headers)) ?? null
   },
 }

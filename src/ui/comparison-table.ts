@@ -12,7 +12,13 @@
  *               D-02, D-08, D-09, D-10, D-11, D-12, D-13, D-14, SIM-08
  */
 import { effect } from '@preact/signals-core'
-import { simResults, activeBatteries, isComputing, computeError, salderingOn } from '../state/app-state'
+import {
+  simResults,
+  activeBatteries,
+  isComputing,
+  computeError,
+  salderingOn,
+} from '../state/app-state'
 import { deriveMetrics, detectLeaders } from '../helpers/metrics'
 import { colorSlotFor } from '../helpers/color'
 import { formatKwh, formatPct, formatRatio } from '../helpers/format'
@@ -202,18 +208,15 @@ function createMetricCell(
   labelText: string,
   rowIdx: number,
   leaders: Map<string, number>,
-  extraClasses: string[] = [],
+  extraClasses: string[] = []
 ): HTMLTableCellElement {
   const td = document.createElement('td')
   const isLeader = leaders.get(metricKey) === rowIdx
-  const classes = [
-    isLeader ? 'table-cell--leader' : '',
-    ...extraClasses,
-  ].filter(Boolean)
+  const classes = [isLeader ? 'table-cell--leader' : '', ...extraClasses].filter(Boolean)
   if (classes.length > 0) td.className = classes.join(' ')
   td.dataset.metric = metricKey // D-12 Phase 5 hook
-  td.dataset.label = labelText   // D-12 Phase 5 stacked card reflow
-  td.textContent = value         // textContent — formatted number string, never user HTML
+  td.dataset.label = labelText // D-12 Phase 5 stacked card reflow
+  td.textContent = value // textContent — formatted number string, never user HTML
   return td
 }
 
@@ -227,7 +230,7 @@ function buildBatteryRow(
   rowIdx: number,
   orderedIds: string[],
   leaders: Map<string, number>,
-  showSaldering: boolean,
+  showSaldering: boolean
 ): HTMLTableRowElement {
   const usableCapacity = battery.nominalCapacityKwh * battery.dodFraction
   const m = deriveMetrics(result, usableCapacity)
@@ -259,7 +262,7 @@ function buildBatteryRow(
     'zonder saldering',
     rowIdx,
     leaders,
-    ['col-primary'],
+    ['col-primary']
   )
   tr.appendChild(avoidedOffCell)
 
@@ -269,11 +272,10 @@ function buildBatteryRow(
   // avoidedOn === 0 is a neutral result — no minus sign, no red (WR-04).
   // Only appended to the row when showSaldering is true (D-07).
   if (showSaldering) {
-    const avoidedOnNegative = m.avoidedOn < 0  // strictly negative — not zero
+    const avoidedOnNegative = m.avoidedOn < 0 // strictly negative — not zero
     // Format with U+2212 proper minus sign for negative values
-    const avoidedOnText = m.avoidedOn < 0
-      ? `−${formatKwh(Math.abs(m.avoidedOn))}`
-      : formatKwh(m.avoidedOn)
+    const avoidedOnText =
+      m.avoidedOn < 0 ? `−${formatKwh(Math.abs(m.avoidedOn))}` : formatKwh(m.avoidedOn)
     const avoidedOnClasses = ['col-muted']
     if (avoidedOnNegative) avoidedOnClasses.push('table-cell--negative')
     const avoidedOnCell = createMetricCell(
@@ -282,55 +284,59 @@ function buildBatteryRow(
       'met saldering',
       rowIdx,
       leaders,
-      avoidedOnClasses,
+      avoidedOnClasses
     )
     tr.appendChild(avoidedOnCell)
   }
 
   // Column 4: Zelfverbruik %
-  tr.appendChild(createMetricCell(
-    formatPct(m.selfConsumptionPct),
-    'selfConsumptionPct',
-    'Zelfverbruik %',
-    rowIdx,
-    leaders,
-  ))
+  tr.appendChild(
+    createMetricCell(
+      formatPct(m.selfConsumptionPct),
+      'selfConsumptionPct',
+      'Zelfverbruik %',
+      rowIdx,
+      leaders
+    )
+  )
 
   // Column 5: Verschoven kWh
-  tr.appendChild(createMetricCell(
-    formatKwh(m.shiftedKwh),
-    'shiftedKwh',
-    'Verschoven kWh',
-    rowIdx,
-    leaders,
-  ))
+  tr.appendChild(
+    createMetricCell(formatKwh(m.shiftedKwh), 'shiftedKwh', 'Verschoven kWh', rowIdx, leaders)
+  )
 
   // Column 6: Rest-import kWh
-  tr.appendChild(createMetricCell(
-    formatKwh(m.residualImportKwh),
-    'residualImportKwh',
-    'Rest-import kWh',
-    rowIdx,
-    leaders,
-  ))
+  tr.appendChild(
+    createMetricCell(
+      formatKwh(m.residualImportKwh),
+      'residualImportKwh',
+      'Rest-import kWh',
+      rowIdx,
+      leaders
+    )
+  )
 
   // Column 7: Rest-teruglevering kWh
-  tr.appendChild(createMetricCell(
-    formatKwh(m.residualExportKwh),
-    'residualExportKwh',
-    'Rest-teruglevering kWh',
-    rowIdx,
-    leaders,
-  ))
+  tr.appendChild(
+    createMetricCell(
+      formatKwh(m.residualExportKwh),
+      'residualExportKwh',
+      'Rest-teruglevering kWh',
+      rowIdx,
+      leaders
+    )
+  )
 
   // Column 8: Marginale benutting
-  tr.appendChild(createMetricCell(
-    formatRatio(m.marginalBenutting),
-    'marginalBenutting',
-    'Marginale benutting kWh/kWh',
-    rowIdx,
-    leaders,
-  ))
+  tr.appendChild(
+    createMetricCell(
+      formatRatio(m.marginalBenutting),
+      'marginalBenutting',
+      'Marginale benutting kWh/kWh',
+      rowIdx,
+      leaders
+    )
+  )
 
   return tr
 }
@@ -359,7 +365,7 @@ function renderTable(
   container: HTMLElement,
   results: SimResult[],
   batteries: BatteryConfig[],
-  showSaldering: boolean,
+  showSaldering: boolean
 ): void {
   container.innerHTML = ''
 

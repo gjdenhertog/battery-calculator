@@ -26,7 +26,7 @@ import type { IntervalSample, BatteryConfig, SimResult, SimOptions } from './typ
 export function runComparison(
   samples: IntervalSample[],
   batteries: BatteryConfig[],
-  options?: SimOptions,
+  options?: SimOptions
 ): SimResult[] {
   return batteries.map((b) => simulate(samples, b, options))
 }

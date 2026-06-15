@@ -22,7 +22,7 @@ function sample(utcMs: number, gridImportKwh = 0.1, gridExportKwh = 0.05): Inter
 
 const T0 = Date.UTC(2026, 0, 15, 8, 0, 0)
 const SAMPLES: IntervalSample[] = [
-  sample(T0, 0.0, 0.5),                // surplus: solar export
+  sample(T0, 0.0, 0.5), // surplus: solar export
   sample(T0 + 15 * 60 * 1000, 0.4, 0), // demand: grid import
 ]
 

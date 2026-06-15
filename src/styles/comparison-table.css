@@ -84,11 +84,21 @@
   flex-shrink: 0;
 }
 
-.battery-swatch--1 { background-color: var(--color-battery-1); }
-.battery-swatch--2 { background-color: var(--color-battery-2); }
-.battery-swatch--3 { background-color: var(--color-battery-3); }
-.battery-swatch--4 { background-color: var(--color-battery-4); }
-.battery-swatch--5 { background-color: var(--color-battery-5); }
+.battery-swatch--1 {
+  background-color: var(--color-battery-1);
+}
+.battery-swatch--2 {
+  background-color: var(--color-battery-2);
+}
+.battery-swatch--3 {
+  background-color: var(--color-battery-3);
+}
+.battery-swatch--4 {
+  background-color: var(--color-battery-4);
+}
+.battery-swatch--5 {
+  background-color: var(--color-battery-5);
+}
 
 /* ── Stale results dimming while worker computes (SIM-08) ────────────────── */
 .results-stale {

@@ -8,11 +8,11 @@
 
 // Source: 04-UI-SPEC.md §"Per-Battery Color Slots"
 const COLOR_SLOTS = [
-  'var(--color-battery-1)',  // #2563eb — slot 1
-  'var(--color-battery-2)',  // #16a34a — slot 2
-  'var(--color-battery-3)',  // #d97706 — slot 3
-  'var(--color-battery-4)',  // #9333ea — slot 4
-  'var(--color-battery-5)',  // #e11d48 — slot 5
+  'var(--color-battery-1)', // #2563eb — slot 1
+  'var(--color-battery-2)', // #16a34a — slot 2
+  'var(--color-battery-3)', // #d97706 — slot 3
+  'var(--color-battery-4)', // #9333ea — slot 4
+  'var(--color-battery-5)', // #e11d48 — slot 5
 ] as const
 
 /**

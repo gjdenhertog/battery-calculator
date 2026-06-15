@@ -72,7 +72,7 @@ function parseKwh(raw: string, col: string, fileName: string, rowNum: number): n
 function parseLocalTimestamp(
   raw: string,
   fileName: string,
-  rowNum: number,
+  rowNum: number
 ): { timestamp: Date; localHour: number } {
   const trimmed = raw.trim()
 
@@ -153,7 +153,7 @@ const HomeWizardP1Parser: CsvParser = {
    * passed over by PapaParse header:true and never referenced.
    */
   claim(headers: string[]): boolean {
-    return REQUIRED_HEADERS.every(h => headers.includes(h))
+    return REQUIRED_HEADERS.every((h) => headers.includes(h))
   },
 
   /**

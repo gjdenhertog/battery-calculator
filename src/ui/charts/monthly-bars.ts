@@ -55,10 +55,7 @@ const INNER_GAP_FRAC = 0.12
  * getComputedStyle cannot be called in a node environment; callers guard this.
  */
 function resolveBatteryColor(batteryId: string, orderedIds: string[]): string {
-  const cssVar = colorFor(batteryId, orderedIds)
-    .replace('var(', '')
-    .replace(')', '')
-    .trim()
+  const cssVar = colorFor(batteryId, orderedIds).replace('var(', '').replace(')', '').trim()
   return getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#2563eb'
 }
 
@@ -69,9 +66,13 @@ function resolveBatteryColor(batteryId: string, orderedIds: string[]): string {
 function hexToRgba(hex: string, alpha: number): string {
   // Normalize: strip # and handle shorthand (#abc → #aabbcc)
   const clean = hex.startsWith('#') ? hex.slice(1) : hex
-  const full = clean.length === 3
-    ? clean.split('').map((c) => c + c).join('')
-    : clean
+  const full =
+    clean.length === 3
+      ? clean
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : clean
   const r = parseInt(full.slice(0, 2), 16)
   const g = parseInt(full.slice(2, 4), 16)
   const b = parseInt(full.slice(4, 6), 16)
@@ -193,9 +194,7 @@ function updateSparseNote(sparseNote: HTMLElement, buckets: MonthBucket[]): void
  * data[0] = month ordinal indices [0, 1, ..., N-1]
  * data[1..M] = per-battery shiftedKwh arrays for each month
  */
-function buildBarData(
-  allBuckets: MonthBucket[][],
-): uPlot.AlignedData {
+function buildBarData(allBuckets: MonthBucket[][]): uPlot.AlignedData {
   if (allBuckets.length === 0 || allBuckets[0].length === 0) {
     return [[]] as uPlot.AlignedData
   }
@@ -216,7 +215,7 @@ function buildBarOpts(
   batteries: BatteryConfig[],
   allBuckets: MonthBucket[][],
   containerWidth: number,
-  wrapper: HTMLElement,
+  wrapper: HTMLElement
 ): uPlot.Options {
   const orderedIds = batteries.map((b) => b.id)
   // Use first battery's buckets for month labels (all batteries share same months)
@@ -384,9 +383,7 @@ export function initMonthlyBarsChart(container: HTMLElement): () => void {
 
     try {
       // Build month buckets per battery (pure, node-safe)
-      const allBuckets: MonthBucket[][] = results.map((result) =>
-        bucketByMonth(result.trace, ZONE)
-      )
+      const allBuckets: MonthBucket[][] = results.map((result) => bucketByMonth(result.trace, ZONE))
 
       // Ensure DOM section exists
       if (!domRefs) {
@@ -418,7 +415,12 @@ export function initMonthlyBarsChart(container: HTMLElement): () => void {
         }
         // Clear any previous uPlot canvas from the wrapper
         chartWrapper.innerHTML = ''
-        const opts = buildBarOpts(batteries, allBuckets, chartWrapper.offsetWidth || 600, chartWrapper)
+        const opts = buildBarOpts(
+          batteries,
+          allBuckets,
+          chartWrapper.offsetWidth || 600,
+          chartWrapper
+        )
         chart = new uPlot(opts, data, chartWrapper)
         lastBatteryCount = batteryCount
       }

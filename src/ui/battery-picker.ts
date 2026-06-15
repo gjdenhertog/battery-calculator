@@ -9,7 +9,12 @@
  * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP, D-10).
  */
 import { effect } from '@preact/signals-core'
-import { selectedBatteries, customBatteries, activeBatteries, scheduleRecompute } from '../state/app-state'
+import {
+  selectedBatteries,
+  customBatteries,
+  activeBatteries,
+  scheduleRecompute,
+} from '../state/app-state'
 import { BATTERY_CATALOG } from '../domain/battery-catalog'
 import type { BatteryConfig } from '../domain/types'
 import { colorSlotFor } from '../helpers/color'
@@ -58,7 +63,7 @@ function buildSpecCard(
   battery: BatteryConfig,
   checked: boolean,
   disabled: boolean,
-  orderedSelectedIds: string[],
+  orderedSelectedIds: string[]
 ): HTMLLIElement {
   const li = document.createElement('li')
   li.className = [
@@ -99,11 +104,23 @@ function buildSpecCard(
   const dl = document.createElement('dl')
   dl.className = 'battery-card__specs'
 
-  appendSpec(dl, 'Capaciteit', `${battery.nominalCapacityKwh.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`)
+  appendSpec(
+    dl,
+    'Capaciteit',
+    `${battery.nominalCapacityKwh.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`
+  )
   appendSpec(dl, 'Bruikbaar', `${Math.round(battery.dodFraction * 100)} %`)
   appendSpec(dl, 'Rendement', `${Math.round(battery.roundTripEfficiency * 100)} %`)
-  appendSpec(dl, 'Max laden', `${battery.maxChargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`)
-  appendSpec(dl, 'Max ontladen', `${battery.maxDischargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`)
+  appendSpec(
+    dl,
+    'Max laden',
+    `${battery.maxChargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`
+  )
+  appendSpec(
+    dl,
+    'Max ontladen',
+    `${battery.maxDischargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`
+  )
 
   li.appendChild(dl)
   return li
@@ -146,8 +163,7 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
   incompleteAlert.setAttribute('role', 'alert')
   incompleteAlert.className = 'custom-battery-incomplete'
   incompleteAlert.hidden = true
-  incompleteAlert.textContent =
-    'Eigen batterij niet meegenomen — vul minimaal de capaciteit in.' // textContent — static string
+  incompleteAlert.textContent = 'Eigen batterij niet meegenomen — vul minimaal de capaciteit in.' // textContent — static string
 
   // ── Name field (D-02) — optional, pre-filled with 'Eigen batterij N' ────
   const nameFieldLabel = document.createElement('label')
@@ -282,8 +298,7 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
     const capacityInput = inputEls.get('nominalCapacityKwh')!
     const capacityVal = parseFloat(capacityInput.value)
 
-    const isCapacityValid =
-      !Number.isNaN(capacityVal) && capacityVal > 0 && capacityVal <= 200
+    const isCapacityValid = !Number.isNaN(capacityVal) && capacityVal > 0 && capacityVal <= 200
 
     // Clear all error states first
     for (const def of fieldDefs) {
@@ -369,9 +384,7 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
 
     const partial = buildPartialOrNull()
     const prev = customBatteries.value
-    const alreadyActive = prev.some(
-      (b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0,
-    )
+    const alreadyActive = prev.some((b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0)
 
     if (!partial) {
       // Invalid draft: surface the incomplete note and drop any stale entry.
@@ -388,8 +401,7 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
 
     // Cap guard: block committing a NEW custom past the 5-battery cap (D-03).
     if (!alreadyActive && activeBatteries.value.length >= MAX_SELECTED) {
-      incompleteAlert.textContent =
-        'Maximaal 5 batterijen — verwijder er eerst één.' // textContent — static string
+      incompleteAlert.textContent = 'Maximaal 5 batterijen — verwijder er eerst één.' // textContent — static string
       incompleteAlert.hidden = false
       return
     }
@@ -639,7 +651,7 @@ export function initBatteryPicker(region: HTMLElement): void {
       // Enable/disable add button based on valid-battery cap (D-03)
       addBtn.disabled = atCap
       addBtn.classList.toggle('battery-picker__add--disabled', atCap)
-    }),
+    })
   )
 }
 

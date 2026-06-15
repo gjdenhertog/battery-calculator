@@ -17,8 +17,18 @@ import type { TraceRow } from './types'
 
 /** NL abbreviated month names indexed 0 (Jan) to 11 (Dec) */
 const NL_MONTHS_FULL = [
-  'januari', 'februari', 'maart', 'april', 'mei', 'juni',
-  'juli', 'augustus', 'september', 'oktober', 'november', 'december',
+  'januari',
+  'februari',
+  'maart',
+  'april',
+  'mei',
+  'juni',
+  'juli',
+  'augustus',
+  'september',
+  'oktober',
+  'november',
+  'december',
 ]
 
 export interface RepresentativeWeek {
@@ -46,8 +56,8 @@ export function selectRepresentativeWeek(trace: TraceRow[], zone: string): Repre
   // Accumulate residualExportKwh per Amsterdam-local Mon–Sun week
   // Key: Monday's UTC ms (as returned by startOfWeek on TZDate)
   type WeekAccum = {
-    weekStartMs: number    // Monday 00:00 Amsterdam in UTC ms
-    exportSum: number      // total residualExportKwh for this week
+    weekStartMs: number // Monday 00:00 Amsterdam in UTC ms
+    exportSum: number // total residualExportKwh for this week
   }
 
   const weekMap = new Map<number, WeekAccum>()

@@ -89,23 +89,23 @@ const CRIT3: BatteryConfig = {
   id: 'crit3',
   name: 'Synthetic criterion-3 battery',
   nominalCapacityKwh: 5.0,
-  dodFraction: 0.90,
-  roundTripEfficiency: 0.90,
-  maxChargeKw: 100,   // intentionally large — power clamp must not bind
+  dodFraction: 0.9,
+  roundTripEfficiency: 0.9,
+  maxChargeKw: 100, // intentionally large — power clamp must not bind
   maxDischargeKw: 100, // intentionally large — power clamp must not bind
   datasheetUrl: 'https://example.com/crit3',
 }
 
 // Anchored timestamps — hourly cadence, 5 representative intervals
-const T0 = Date.UTC(2026, 0, 15, 8, 0, 0)  // 08:00 UTC
-const T1 = T0 + 60 * 60 * 1000              // 09:00
-const T2 = T1 + 60 * 60 * 1000              // 10:00
-const T3 = T2 + 60 * 60 * 1000              // 11:00
-const T4 = T3 + 60 * 60 * 1000              // 12:00
+const T0 = Date.UTC(2026, 0, 15, 8, 0, 0) // 08:00 UTC
+const T1 = T0 + 60 * 60 * 1000 // 09:00
+const T2 = T1 + 60 * 60 * 1000 // 10:00
+const T3 = T2 + 60 * 60 * 1000 // 11:00
+const T4 = T3 + 60 * 60 * 1000 // 12:00
 
 // 15-min timestamps for criterion-2 fixture
-const Q0 = Date.UTC(2026, 0, 20, 12, 0, 0)  // 12:00 UTC
-const Q1 = Q0 + 15 * 60 * 1000              // 12:15
+const Q0 = Date.UTC(2026, 0, 20, 12, 0, 0) // 12:00 UTC
+const Q1 = Q0 + 15 * 60 * 1000 // 12:15
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -149,11 +149,11 @@ describe('simulate', () => {
     //   delivered = min(10, 4.269, 100×1) = 4.269
     const result = simulate(
       [
-        sample(T0, 0, 10),   // large export → charge up to usable cap
-        sample(T1, 0, 10),   // still charging
-        sample(T2, 10, 0),   // large import → discharge
+        sample(T0, 0, 10), // large export → charge up to usable cap
+        sample(T1, 0, 10), // still charging
+        sample(T2, 10, 0), // large import → discharge
       ],
-      CRIT3,
+      CRIT3
     )
     // Find the trace row for T2 (index 2) — discharge happens here
     const dischargeRow = result.trace[2]
@@ -161,7 +161,7 @@ describe('simulate', () => {
 
     // SoC must never exceed usable = 5.0 × 0.90 = 4.5 kWh
     const maxSoc = Math.max(...result.trace.map((r) => r.socKwh))
-    expect(maxSoc).toBeLessThanOrEqual(4.5 + 1e-9)  // floating-point tolerance
+    expect(maxSoc).toBeLessThanOrEqual(4.5 + 1e-9) // floating-point tolerance
   })
 
   // -------------------------------------------------------------------------
@@ -174,20 +174,20 @@ describe('simulate', () => {
     const samples = Array.from({ length: 20 }, (_, i) =>
       sample(
         start + i * 15 * 60 * 1000,
-        i % 3 === 0 ? 0 : 0.3,  // alternating import/export pattern
-        i % 3 === 0 ? 2.0 : 0,
-      ),
+        i % 3 === 0 ? 0 : 0.3, // alternating import/export pattern
+        i % 3 === 0 ? 2.0 : 0
+      )
     )
 
     const resultSessy = simulate(samples, SESSY_5)
-    const usableSessy = SESSY_5.nominalCapacityKwh * SESSY_5.dodFraction  // 5.0
+    const usableSessy = SESSY_5.nominalCapacityKwh * SESSY_5.dodFraction // 5.0
     for (const row of resultSessy.trace) {
       expect(row.socKwh).toBeLessThanOrEqual(usableSessy + 1e-9)
       expect(row.socKwh).toBeGreaterThanOrEqual(-1e-9)
     }
 
     const resultCrit3 = simulate(samples, CRIT3)
-    const usableCrit3 = CRIT3.nominalCapacityKwh * CRIT3.dodFraction  // 4.5
+    const usableCrit3 = CRIT3.nominalCapacityKwh * CRIT3.dodFraction // 4.5
     for (const row of resultCrit3.trace) {
       expect(row.socKwh).toBeLessThanOrEqual(usableCrit3 + 1e-9)
       expect(row.socKwh).toBeGreaterThanOrEqual(-1e-9)
@@ -201,8 +201,9 @@ describe('simulate', () => {
     // All-import, zero-export over 3 days × 4 intervals.
     // SoC stays 0 throughout; shiftedKwh must be 0; all import is residual.
     const start = Date.UTC(2026, 1, 1, 0, 0, 0)
-    const purlyImport = Array.from({ length: 12 }, (_, i) =>
-      sample(start + i * 60 * 60 * 1000, 0.5, 0),  // 0.5 kWh import, 0 export
+    const purlyImport = Array.from(
+      { length: 12 },
+      (_, i) => sample(start + i * 60 * 60 * 1000, 0.5, 0) // 0.5 kWh import, 0 export
     )
 
     const result = simulate(purlyImport, SESSY_5)
@@ -225,7 +226,7 @@ describe('simulate', () => {
   it('coarse cadence — daily-cadence samples set coarseCadenceWarning true (D-04)', () => {
     // Daily cadence (24h intervals) must trigger the honesty flag.
     const start = Date.UTC(2026, 0, 1, 0, 0, 0)
-    const dailySamples = contiguousDaily(start, 7)  // 7 daily samples
+    const dailySamples = contiguousDaily(start, 7) // 7 daily samples
 
     const result = simulate(dailySamples, SESSY_5)
     expect(result.coarseCadenceWarning).toBe(true)
@@ -281,8 +282,8 @@ describe('simulate', () => {
     // Sessy: maxDischargeKw = 1.7 kW. Over a 1h interval, max discharge = 1.7 kWh.
     // We provide a 3 kWh import demand → clamp binds at 1.7 kWh.
     const samples = [
-      sample(T0, 0, 3.0),   // 3 kWh export → charges battery (3.0 > 2.2*1h = 2.2, clamped)
-      sample(T1, 3.0, 0),   // 3 kWh import → discharge demand 3, but maxDischargeKw×1h = 1.7
+      sample(T0, 0, 3.0), // 3 kWh export → charges battery (3.0 > 2.2*1h = 2.2, clamped)
+      sample(T1, 3.0, 0), // 3 kWh import → discharge demand 3, but maxDischargeKw×1h = 1.7
     ]
     const result = simulate(samples, SESSY_5)
     // Discharge must be clamped at 1.7 × 1h = 1.7 kWh (not 3.0 or 2.2)
@@ -308,8 +309,8 @@ describe('simulate', () => {
     }
 
     const samples = [
-      sample(Q0, 0, 1.5),    // export interval — exercises charge clamp
-      sample(Q1, 0.5, 0),    // import interval — exercises discharge
+      sample(Q0, 0, 1.5), // export interval — exercises charge clamp
+      sample(Q1, 0.5, 0), // import interval — exercises discharge
     ]
 
     const resultCatalog = simulate(samples, SESSY_5)
@@ -327,7 +328,7 @@ describe('simulate', () => {
       expect(resultCustom.trace[i].chargedKwh).toBeCloseTo(resultCatalog.trace[i].chargedKwh, 6)
       expect(resultCustom.trace[i].dischargedKwh).toBeCloseTo(
         resultCatalog.trace[i].dischargedKwh,
-        6,
+        6
       )
     }
   })
@@ -366,11 +367,11 @@ describe('simulate', () => {
      * Similarly T3 gridSideCharge = 2.0 kWh < 2.2 kW×1h → 0 residual.
      */
     const fiveIntervals = [
-      sample(T0, 0.5, 0.0),   // T0: import only; battery is empty — no discharge
-      sample(T1, 0.0, 1.5),   // T1: export; charge (full 1.5 kWh within power + capacity limits)
-      sample(T2, 0.8, 0.0),   // T2: import; discharge 0.8 kWh (within SoC + discharge limit)
-      sample(T3, 0.0, 2.0),   // T3: export; charge full 2.0 kWh
-      sample(T4, 1.0, 0.0),   // T4: import; discharge 1.0 kWh (within SoC + discharge limit)
+      sample(T0, 0.5, 0.0), // T0: import only; battery is empty — no discharge
+      sample(T1, 0.0, 1.5), // T1: export; charge (full 1.5 kWh within power + capacity limits)
+      sample(T2, 0.8, 0.0), // T2: import; discharge 0.8 kWh (within SoC + discharge limit)
+      sample(T3, 0.0, 2.0), // T3: export; charge full 2.0 kWh
+      sample(T4, 1.0, 0.0), // T4: import; discharge 1.0 kWh (within SoC + discharge limit)
     ]
 
     const result = simulate(fiveIntervals, SESSY_5)
@@ -433,10 +434,10 @@ describe('simulate', () => {
      */
     const result = simulate(
       [
-        sample(T0, 0, 0),          // lead sample; establishes ~1 h interval duration
-        sample(T1, 2, 3),          // mixed: import=2, export=3 → net=+1 → charge
+        sample(T0, 0, 0), // lead sample; establishes ~1 h interval duration
+        sample(T1, 2, 3), // mixed: import=2, export=3 → net=+1 → charge
       ],
-      SESSY_5,
+      SESSY_5
     )
     const mixedRow = result.trace[1]
 
@@ -475,10 +476,10 @@ describe('simulate', () => {
      */
     const result = simulate(
       [
-        sample(T0, 0, 0),          // lead sample
-        sample(T1, 3, 1),          // mixed: import=3, export=1 → net=-2 → discharge path
+        sample(T0, 0, 0), // lead sample
+        sample(T1, 3, 1), // mixed: import=3, export=1 → net=-2 → discharge path
       ],
-      SESSY_5,
+      SESSY_5
     )
     const mixedRow = result.trace[1]
 

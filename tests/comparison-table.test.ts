@@ -19,7 +19,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderShell } from '../src/shell'
 import { initComparisonTable } from '../src/ui/comparison-table'
-import { simResults, selectedBatteries, isComputing, computeError, salderingOn } from '../src/state/signals'
+import {
+  simResults,
+  selectedBatteries,
+  isComputing,
+  computeError,
+  salderingOn,
+} from '../src/state/signals'
 import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
 import type { SimResult, BatteryConfig } from '../src/domain/types'
 
@@ -383,13 +389,10 @@ describe('initComparisonTable DOM contract', () => {
 
     // Start in the mismatched state.
     selectedBatteries.value = [batteryA, batteryB]
-    simResults.value = [makeSimResult({ shiftedKwh: 100 })]  // length 1 — mismatch
+    simResults.value = [makeSimResult({ shiftedKwh: 100 })] // length 1 — mismatch
 
     // Now the recompute lands: simResults grows to match activeBatteries.
-    simResults.value = [
-      makeSimResult({ shiftedKwh: 100 }),
-      makeSimResult({ shiftedKwh: 200 }),
-    ]
+    simResults.value = [makeSimResult({ shiftedKwh: 100 }), makeSimResult({ shiftedKwh: 200 })]
 
     // Both rows must now be rendered without error.
     const rows = container.querySelectorAll('.battery-row')
@@ -512,13 +515,15 @@ describe('saldering toggle (D-06..D-08)', () => {
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     // Use a negative avoidedOn result to confirm note is suppressed
-    simResults.value = [makeSimResult({
-      totalImportKwh: 100,
-      totalExportKwh: 200,
-      residualImportKwh: 50,
-      residualExportKwh: 10,
-      shiftedKwh: 50,
-    })]
+    simResults.value = [
+      makeSimResult({
+        totalImportKwh: 100,
+        totalExportKwh: 200,
+        residualImportKwh: 50,
+        residualExportKwh: 10,
+        shiftedKwh: 50,
+      }),
+    ]
 
     expect(container.querySelector('.saldering-negative-note')).toBeNull()
   })
@@ -540,7 +545,9 @@ describe('saldering toggle (D-06..D-08)', () => {
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
 
-    const headerTexts = Array.from(container.querySelectorAll('th')).map((th) => th.textContent ?? '')
+    const headerTexts = Array.from(container.querySelectorAll('th')).map(
+      (th) => th.textContent ?? ''
+    )
     expect(headerTexts.some((t) => t.includes('zonder saldering'))).toBe(true)
     expect(headerTexts.some((t) => t.includes('met saldering'))).toBe(true)
   })
@@ -558,13 +565,15 @@ describe('saldering toggle (D-06..D-08)', () => {
     salderingOn.value = true
     const battery = makeBattery()
     // Construct a result with negative avoidedOn
-    simResults.value = [makeSimResult({
-      totalImportKwh: 100,
-      totalExportKwh: 200,
-      residualImportKwh: 50,
-      residualExportKwh: 10,
-      shiftedKwh: 50,
-    })]
+    simResults.value = [
+      makeSimResult({
+        totalImportKwh: 100,
+        totalExportKwh: 200,
+        residualImportKwh: 50,
+        residualExportKwh: 10,
+        shiftedKwh: 50,
+      }),
+    ]
     selectedBatteries.value = [battery]
 
     expect(container.querySelector('.saldering-negative-note')).not.toBeNull()

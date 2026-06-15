@@ -122,7 +122,7 @@ export function createChartTooltip(wrapper: HTMLElement): TooltipController {
  */
 export function hoverTooltipPlugin(
   wrapper: HTMLElement,
-  buildContent: (u: uPlot, idx: number, xVal: number, yVal: number) => TooltipContent | null,
+  buildContent: (u: uPlot, idx: number, xVal: number, yVal: number) => TooltipContent | null
 ): uPlot.Plugin {
   let tooltip: TooltipController | null = null
   let over: HTMLElement | null = null
@@ -164,7 +164,7 @@ export function hoverTooltipPlugin(
             e.clientX - wrapRect.left,
             e.clientY - wrapRect.top,
             wrapRect.width,
-            wrapRect.height,
+            wrapRect.height
           )
         }
 

@@ -66,10 +66,7 @@ const COLOR_ONTLADEN = '#d97706'
  * Resolve a CSS custom property returned by colorFor() to a hex string.
  */
 function resolveBatteryColor(batteryId: string, orderedIds: string[]): string {
-  const cssVar = colorFor(batteryId, orderedIds)
-    .replace('var(', '')
-    .replace(')', '')
-    .trim()
+  const cssVar = colorFor(batteryId, orderedIds).replace('var(', '').replace(')', '').trim()
   return getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#2563eb'
 }
 
@@ -150,7 +147,7 @@ function buildSectionDOM(container: HTMLElement): FlowChartDOMRefs {
 function populateDropdown(
   select: HTMLSelectElement,
   batteries: BatteryConfig[],
-  selectedId: string,
+  selectedId: string
 ): void {
   select.innerHTML = ''
   for (const battery of batteries) {
@@ -172,11 +169,7 @@ function populateDropdown(
 // Legend builder (4 fixed series)
 // ---------------------------------------------------------------------------
 
-function buildLegend(
-  legend: HTMLElement,
-  battery: BatteryConfig,
-  orderedIds: string[],
-): void {
+function buildLegend(legend: HTMLElement, battery: BatteryConfig, orderedIds: string[]): void {
   legend.innerHTML = ''
 
   const resolvedBatteryColor = resolveBatteryColor(battery.id, orderedIds)
@@ -220,9 +213,7 @@ function buildLegend(
  * Filter trace rows to those within [startTs, endTs] (both inclusive, ms).
  */
 function filterWeekRows(trace: TraceRow[], startTs: number, endTs: number): TraceRow[] {
-  return trace.filter(
-    (r) => r.timestamp.getTime() >= startTs && r.timestamp.getTime() <= endTs,
-  )
+  return trace.filter((r) => r.timestamp.getTime() >= startTs && r.timestamp.getTime() <= endTs)
 }
 
 /**
@@ -254,7 +245,7 @@ function buildFlowOpts(
   battery: BatteryConfig,
   orderedIds: string[],
   containerWidth: number,
-  wrapper: HTMLElement,
+  wrapper: HTMLElement
 ): uPlot.Options {
   const steppedBuilder = uPlot.paths.stepped!({ align: 1 }) // step-after (VIZ-03)
   const batteryColor = resolveBatteryColor(battery.id, orderedIds)
@@ -428,10 +419,7 @@ export function initFlowChart(container: HTMLElement): () => void {
       const orderedIds = batteries.map((b) => b.id)
 
       // Determine selected battery id (default to first if current selection is gone)
-      if (
-        selectedBatteryId === null ||
-        !orderedIds.includes(selectedBatteryId)
-      ) {
+      if (selectedBatteryId === null || !orderedIds.includes(selectedBatteryId)) {
         selectedBatteryId = batteries[0].id
       }
 
@@ -466,7 +454,12 @@ export function initFlowChart(container: HTMLElement): () => void {
       } else {
         // First render or after teardown: create uPlot
         chartWrapper.innerHTML = ''
-        const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600, chartWrapper)
+        const opts = buildFlowOpts(
+          selectedBattery,
+          orderedIds,
+          chartWrapper.offsetWidth || 600,
+          chartWrapper
+        )
         chart = new uPlot(opts, data, chartWrapper)
       }
     } catch {
@@ -523,7 +516,12 @@ export function initFlowChart(container: HTMLElement): () => void {
       chartWrapper.innerHTML = ''
     }
 
-    const opts = buildFlowOpts(selectedBattery, orderedIds, chartWrapper.offsetWidth || 600, chartWrapper)
+    const opts = buildFlowOpts(
+      selectedBattery,
+      orderedIds,
+      chartWrapper.offsetWidth || 600,
+      chartWrapper
+    )
     chart = new uPlot(opts, data, chartWrapper)
   }
 

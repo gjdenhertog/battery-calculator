@@ -43,9 +43,9 @@ describe('selectRepresentativeWeek', () => {
       // Week B: Mon 2025-06-09, high export (35 kWh total — 5 kWh/day)
       // Week C: Mon 2025-06-16, medium export (14 kWh total — 2 kWh/day)
       const rows = [
-        ...buildWeek('2025-06-02T10:00:00Z', 1),  // 7 kWh/week
-        ...buildWeek('2025-06-09T10:00:00Z', 5),  // 35 kWh/week — WINNER
-        ...buildWeek('2025-06-16T10:00:00Z', 2),  // 14 kWh/week
+        ...buildWeek('2025-06-02T10:00:00Z', 1), // 7 kWh/week
+        ...buildWeek('2025-06-09T10:00:00Z', 5), // 35 kWh/week — WINNER
+        ...buildWeek('2025-06-16T10:00:00Z', 2), // 14 kWh/week
       ]
       const result = selectRepresentativeWeek(rows, AMSTERDAM)
       // startTs is Monday 2025-06-09 in Amsterdam local time
@@ -54,7 +54,7 @@ describe('selectRepresentativeWeek', () => {
       const startLocal = new TZDate(result.startTs, AMSTERDAM)
       expect(startLocal.getFullYear()).toBe(2025)
       expect(startLocal.getMonth()).toBe(5) // June = month index 5
-      expect(startLocal.getDate()).toBe(9)  // 9th
+      expect(startLocal.getDate()).toBe(9) // 9th
     })
 
     it('weekLabel contains the Amsterdam-local start and end dates', () => {
@@ -95,7 +95,7 @@ describe('selectRepresentativeWeek', () => {
       const startLocal = new TZDate(result.startTs, AMSTERDAM)
       expect(startLocal.getFullYear()).toBe(2025)
       expect(startLocal.getMonth()).toBe(5) // June = month index 5
-      expect(startLocal.getDate()).toBe(2)  // 2nd
+      expect(startLocal.getDate()).toBe(2) // 2nd
     })
   })
 

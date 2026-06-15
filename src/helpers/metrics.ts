@@ -25,8 +25,8 @@ export function avoidedWithoutSaldering(sim: SimResult): number {
  */
 export function avoidedWithSaldering(sim: SimResult): number {
   const baselineNet = Math.max(0, sim.totalImportKwh - sim.totalExportKwh)
-  const batteryNet  = Math.max(0, sim.residualImportKwh - sim.residualExportKwh)
-  return baselineNet - batteryNet  // can be negative — D-02: show as-is
+  const batteryNet = Math.max(0, sim.residualImportKwh - sim.residualExportKwh)
+  return baselineNet - batteryNet // can be negative — D-02: show as-is
 }
 
 /**
@@ -38,7 +38,7 @@ export function avoidedWithSaldering(sim: SimResult): number {
 export function netImportWithValuation(
   residualImportKwh: number,
   residualExportKwh: number,
-  feedInValue: 0 | 1,
+  feedInValue: 0 | 1
 ): number {
   return residualImportKwh - feedInValue * residualExportKwh
 }
@@ -50,19 +50,19 @@ export function netImportWithValuation(
 /** All per-battery derived metrics shown in the comparison table */
 export interface DerivedMetrics {
   /** kWh netto-import vermeden zonder saldering (D-01 OFF) */
-  avoidedOff:         number
+  avoidedOff: number
   /** kWh netto-import vermeden met saldering (D-01 ON — can be negative per D-02) */
-  avoidedOn:          number
+  avoidedOn: number
   /** Zelfverbruik % — clamped to [0, 100] for display */
   selfConsumptionPct: number
   /** Verschoven kWh — raw shiftedKwh from SimResult */
-  shiftedKwh:         number
+  shiftedKwh: number
   /** Rest-import kWh */
-  residualImportKwh:  number
+  residualImportKwh: number
   /** Rest-teruglevering kWh */
-  residualExportKwh:  number
+  residualExportKwh: number
   /** Marginale benutting — shiftedKwh / usableCapacityKwh */
-  marginalBenutting:  number
+  marginalBenutting: number
 }
 
 /**
@@ -74,15 +74,14 @@ export interface DerivedMetrics {
  */
 export function deriveMetrics(sim: SimResult, usableCapacityKwh: number): DerivedMetrics {
   return {
-    avoidedOff:         avoidedWithoutSaldering(sim),
-    avoidedOn:          avoidedWithSaldering(sim),
-    selfConsumptionPct: sim.totalImportKwh > 0
-      ? Math.min(100, (sim.shiftedKwh / sim.totalImportKwh) * 100) : 0,
-    shiftedKwh:         sim.shiftedKwh,
-    residualImportKwh:  sim.residualImportKwh,
-    residualExportKwh:  sim.residualExportKwh,
-    marginalBenutting:  usableCapacityKwh >= 0.1
-      ? sim.shiftedKwh / usableCapacityKwh : 0,
+    avoidedOff: avoidedWithoutSaldering(sim),
+    avoidedOn: avoidedWithSaldering(sim),
+    selfConsumptionPct:
+      sim.totalImportKwh > 0 ? Math.min(100, (sim.shiftedKwh / sim.totalImportKwh) * 100) : 0,
+    shiftedKwh: sim.shiftedKwh,
+    residualImportKwh: sim.residualImportKwh,
+    residualExportKwh: sim.residualExportKwh,
+    marginalBenutting: usableCapacityKwh >= 0.1 ? sim.shiftedKwh / usableCapacityKwh : 0,
   }
 }
 
@@ -98,7 +97,11 @@ export type MetricKey = keyof DerivedMetrics
  * The complement (residualImportKwh, residualExportKwh) uses lowest-wins logic.
  */
 export const HIGHER_IS_BETTER: Set<MetricKey> = new Set([
-  'avoidedOff', 'avoidedOn', 'selfConsumptionPct', 'shiftedKwh', 'marginalBenutting',
+  'avoidedOff',
+  'avoidedOn',
+  'selfConsumptionPct',
+  'shiftedKwh',
+  'marginalBenutting',
 ])
 
 /**
@@ -110,8 +113,13 @@ export const HIGHER_IS_BETTER: Set<MetricKey> = new Set([
  */
 export function detectLeaders(all: DerivedMetrics[]): Map<MetricKey, number> {
   const keys: MetricKey[] = [
-    'avoidedOff', 'avoidedOn', 'selfConsumptionPct', 'shiftedKwh',
-    'residualImportKwh', 'residualExportKwh', 'marginalBenutting',
+    'avoidedOff',
+    'avoidedOn',
+    'selfConsumptionPct',
+    'shiftedKwh',
+    'residualImportKwh',
+    'residualExportKwh',
+    'marginalBenutting',
   ]
   const leaders = new Map<MetricKey, number>()
   for (const key of keys) {
@@ -120,7 +128,8 @@ export function detectLeaders(all: DerivedMetrics[]): Map<MetricKey, number> {
     all.forEach((m, i) => {
       const v = m[key]
       if (HIGHER_IS_BETTER.has(key) ? v > bestVal : v < bestVal) {
-        bestVal = v; best = i
+        bestVal = v
+        best = i
       }
     })
     if (best >= 0) leaders.set(key, best)

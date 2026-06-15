@@ -43,7 +43,7 @@ export const BATTERY_CATALOG: readonly BatteryConfig[] = [
     name: 'Zonneplan Thuisbatterij 10 kWh',
     nominalCapacityKwh: 10.0,
     dodFraction: 0.95, // [ASSUMED] A-5: Zonneplan quotes nominal; 95% DoD is a plausible mid-point
-    roundTripEfficiency: 0.90,
+    roundTripEfficiency: 0.9,
     maxChargeKw: 4.4,
     maxDischargeKw: 4.4,
     datasheetUrl: 'https://www.zonneplan.nl/thuisbatterij/10-kwh-thuisbatterij',
@@ -73,7 +73,7 @@ export const BATTERY_CATALOG: readonly BatteryConfig[] = [
     id: 'victron-ess-10',
     name: 'Victron ESS (MultiPlus-II + 10 kWh)',
     nominalCapacityKwh: 10.0,
-    dodFraction: 0.90, // [ASSUMED] A-6: typical LFP recommendation; gross capacity quoted
+    dodFraction: 0.9, // [ASSUMED] A-6: typical LFP recommendation; gross capacity quoted
     roundTripEfficiency: 0.85, // [ASSUMED] A-7: inverter + battery round-trip mid-point
     maxChargeKw: 3.0,
     maxDischargeKw: 3.0,

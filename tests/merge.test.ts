@@ -12,6 +12,7 @@
  *  - Gap detection is fabricating synthetic samples (D-05)
  */
 import { describe, it, expect } from 'vitest'
+import { TZDate } from '@date-fns/tz'
 import { detectGaps } from '../src/domain/gaps'
 import { mergeFiles } from '../src/domain/merge'
 import type { IntervalSample, ParseFileResult } from '../src/domain/types'
@@ -46,7 +47,7 @@ function makeParseResult(
   fileName: string,
   cadenceMinutes: number,
   samples: IntervalSample[],
-  overrides: Partial<ParseFileResult> = {},
+  overrides: Partial<ParseFileResult> = {}
 ): ParseFileResult {
   return {
     fileName,
@@ -69,7 +70,7 @@ function makeParseResult(
 describe('detectGaps', () => {
   it('returns gapCount 0 for a fully contiguous 15-min series', () => {
     // 96 samples = one normal 24-hour day at 15 min
-    const start = Date.UTC(2026, 0, 15, 0, 0, 0)  // 2026-01-15 00:00 UTC
+    const start = Date.UTC(2026, 0, 15, 0, 0, 0) // 2026-01-15 00:00 UTC
     const samples = contiguous15min(start, 96)
     const result = detectGaps(samples, 15)
     expect(result.count).toBe(0)
@@ -118,10 +119,7 @@ describe('detectGaps', () => {
     //   2026-03-29 01:00 UTC onwards (01:00 UTC = 03:00 AMS after spring forward)
     //   continuing until 2026-03-29 22:45 UTC = 2026-03-29 23:45 AMS (last slot)
 
-    // Parse the spring-forward fixture CSV to get real UTC timestamps
-    // The fixture has 93 data rows (1 reference + 92 deltas = 92 samples)
-    // We build the expected 92-sample series from TZDate conversions
-    const { TZDate } = require('@date-fns/tz')
+    // Parse the spring-forward fixture CSV to get real UTC timestamps (TZDate imported at top)
 
     // Build 92 sample timestamps for 2026-03-29 Amsterdam
     // Start: 2026-03-29 00:00 AMS local (first delta row)
@@ -161,7 +159,7 @@ describe('detectGaps', () => {
     // 2026-10-25: fall back at 03:00 AMS local → clocks go back to 02:00
     // The day has 25 local hours = 100 fifteen-minute intervals.
     // A correct 15-min series has 100 samples; gap detection must yield 0 gaps.
-    const { TZDate } = require('@date-fns/tz')
+    // (TZDate imported at top)
 
     // Build 100 sample timestamps for 2026-10-25 Amsterdam
     // Walk in UTC ms at 15-min cadence from midnight AMS to end of day
@@ -213,7 +211,7 @@ describe('detectGaps', () => {
 describe('mergeFiles', () => {
   it('produces a merged series sorted ascending by timestamp', () => {
     const start = Date.UTC(2026, 0, 15, 0, 0, 0)
-    const samples15 = contiguous15min(start, 8)   // 8 × 15-min
+    const samples15 = contiguous15min(start, 8) // 8 × 15-min
     const result15 = makeParseResult('fine.csv', 15, samples15)
     const merged = mergeFiles([result15])
     const times = merged.samples.map((s) => s.timestamp.getTime())
@@ -238,13 +236,13 @@ describe('mergeFiles', () => {
 
     // coarse: hourly, one sample at exactly T0 with different values
     const coarseAt = [
-      sample(start, 5.0, 2.5),  // same timestamp, different values
+      sample(start, 5.0, 2.5), // same timestamp, different values
     ]
 
     const result15 = makeParseResult('fine.csv', 15, fineWithValues)
     const result60 = makeParseResult('coarse.csv', 60, coarseAt)
 
-    const merged = mergeFiles([result60, result15])  // pass coarse first (order must not matter)
+    const merged = mergeFiles([result60, result15]) // pass coarse first (order must not matter)
 
     // The overlapping timestamp must carry the fine-file values (DATA-10)
     const overlap = merged.samples.find((s) => s.timestamp.getTime() === start)
@@ -271,8 +269,8 @@ describe('mergeFiles', () => {
 
     const coarseStat = merged.fileStats.find((f) => f.fileName === 'coarse.csv')
     expect(coarseStat).toBeDefined()
-    expect(coarseStat!.rowsOverridden).toBe(1)  // the overlapping sample was overridden
-    expect(coarseStat!.rowsContributed).toBe(0)  // none of coarse contributed to output
+    expect(coarseStat!.rowsOverridden).toBe(1) // the overlapping sample was overridden
+    expect(coarseStat!.rowsContributed).toBe(0) // none of coarse contributed to output
   })
 
   it('records rowsContributed for the finer file (D-08)', () => {
@@ -291,7 +289,7 @@ describe('mergeFiles', () => {
 
     const fineStat = merged.fileStats.find((f) => f.fileName === 'fine.csv')
     expect(fineStat).toBeDefined()
-    expect(fineStat!.rowsContributed).toBe(4)  // all 4 fine samples contributed
+    expect(fineStat!.rowsContributed).toBe(4) // all 4 fine samples contributed
     expect(fineStat!.rowsOverridden).toBe(0)
   })
 

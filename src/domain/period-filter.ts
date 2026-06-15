@@ -22,13 +22,11 @@ import type { IntervalSample } from './types'
 export function filterByPeriod(
   samples: IntervalSample[],
   start: Date | null,
-  end: Date | null,
+  end: Date | null
 ): IntervalSample[] {
   const s = start?.getTime() ?? -Infinity
   const e = end?.getTime() ?? Infinity
-  return samples.filter(
-    (x) => x.timestamp.getTime() >= s && x.timestamp.getTime() <= e,
-  )
+  return samples.filter((x) => x.timestamp.getTime() >= s && x.timestamp.getTime() <= e)
 }
 
 /**

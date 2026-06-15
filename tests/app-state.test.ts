@@ -44,7 +44,7 @@ function sample(utcMs: number, gridImportKwh = 0.1, gridExportKwh = 0.05): Inter
   return { timestamp: new Date(utcMs), gridImportKwh, gridExportKwh }
 }
 
-const T0 = Date.UTC(2026, 0, 15, 0, 0, 0)  // 2026-01-15T00:00:00Z
+const T0 = Date.UTC(2026, 0, 15, 0, 0, 0) // 2026-01-15T00:00:00Z
 const ONE_DAY_MS = 86_400_000
 
 // ---------------------------------------------------------------------------
@@ -105,11 +105,7 @@ describe('initial signal values', () => {
 
 describe('filteredSamples computed', () => {
   it('equals full input when both periodFrom and periodTo are null', () => {
-    const fixture = [
-      sample(T0),
-      sample(T0 + ONE_DAY_MS),
-      sample(T0 + 2 * ONE_DAY_MS),
-    ]
+    const fixture = [sample(T0), sample(T0 + ONE_DAY_MS), sample(T0 + 2 * ONE_DAY_MS)]
     parsedSamples.value = fixture
 
     expect(filteredSamples.value).toHaveLength(3)

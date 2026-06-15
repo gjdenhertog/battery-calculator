@@ -29,7 +29,7 @@ function makeSimResult(
   residualExportKwh: number,
   totalImportKwh: number,
   totalExportKwh: number,
-  periodDays = 30,
+  periodDays = 30
 ): SimResult {
   return {
     shiftedKwh,
@@ -172,7 +172,7 @@ describe('deriveMetrics', () => {
 
   it('returns 0 for marginalBenutting when usableCapacityKwh < 0.1 (T-04-04 division guard)', () => {
     const sim = makeSimResult(100, 50, 20, 500, 100)
-    const m = deriveMetrics(sim, 0.05)  // < 0.1 threshold
+    const m = deriveMetrics(sim, 0.05) // < 0.1 threshold
     expect(m.marginalBenutting).toBe(0)
     expect(Number.isFinite(m.marginalBenutting)).toBe(true)
   })
@@ -199,21 +199,21 @@ describe('deriveMetrics', () => {
 describe('detectLeaders', () => {
   // Three batteries with clearly different metrics
   const m0: DerivedMetrics = {
-    avoidedOff: 300,    // HIGHEST → leader (idx 0)
-    avoidedOn: 250,     // HIGHEST → leader (idx 0)
-    selfConsumptionPct: 40,  // middle
-    shiftedKwh: 300,    // HIGHEST → leader (idx 0)
-    residualImportKwh: 500,  // HIGHEST residual → WORST (idx 2 below is leader)
-    residualExportKwh: 200,  // middle
-    marginalBenutting: 60,   // HIGHEST → leader (idx 0)
+    avoidedOff: 300, // HIGHEST → leader (idx 0)
+    avoidedOn: 250, // HIGHEST → leader (idx 0)
+    selfConsumptionPct: 40, // middle
+    shiftedKwh: 300, // HIGHEST → leader (idx 0)
+    residualImportKwh: 500, // HIGHEST residual → WORST (idx 2 below is leader)
+    residualExportKwh: 200, // middle
+    marginalBenutting: 60, // HIGHEST → leader (idx 0)
   }
   const m1: DerivedMetrics = {
     avoidedOff: 200,
     avoidedOn: 150,
-    selfConsumptionPct: 60,  // HIGHEST → leader (idx 1)
+    selfConsumptionPct: 60, // HIGHEST → leader (idx 1)
     shiftedKwh: 200,
-    residualImportKwh: 400,  // middle
-    residualExportKwh: 150,  // middle
+    residualImportKwh: 400, // middle
+    residualExportKwh: 150, // middle
     marginalBenutting: 40,
   }
   const m2: DerivedMetrics = {
@@ -221,8 +221,8 @@ describe('detectLeaders', () => {
     avoidedOn: 50,
     selfConsumptionPct: 20,
     shiftedKwh: 100,
-    residualImportKwh: 200,  // LOWEST residual → BEST for import (idx 2)
-    residualExportKwh: 80,   // LOWEST residual → BEST for export (idx 2)
+    residualImportKwh: 200, // LOWEST residual → BEST for import (idx 2)
+    residualExportKwh: 80, // LOWEST residual → BEST for export (idx 2)
     marginalBenutting: 20,
   }
 

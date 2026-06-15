@@ -17,7 +17,20 @@ import { TZDate } from '@date-fns/tz'
 import type { TraceRow } from './types'
 
 /** NL abbreviated month names indexed 0 (Jan) to 11 (Dec) */
-const NL_MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+const NL_MONTHS = [
+  'jan',
+  'feb',
+  'mrt',
+  'apr',
+  'mei',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'okt',
+  'nov',
+  'dec',
+]
 
 /** Return the number of days in a given calendar month (1-based month) */
 function daysInMonth(year: number, month1: number): number {
@@ -62,7 +75,7 @@ export function bucketByMonth(trace: TraceRow[], zone: string): MonthBucket[] {
     const local = new TZDate(row.timestamp.getTime(), zone)
     const year = local.getFullYear()
     const month0 = local.getMonth() // 0-indexed
-    const day = local.getDate()     // 1-indexed local calendar day
+    const day = local.getDate() // 1-indexed local calendar day
     const monthKey = `${year}-${String(month0 + 1).padStart(2, '0')}`
 
     let accum = buckets.get(monthKey)

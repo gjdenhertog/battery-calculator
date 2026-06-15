@@ -14,7 +14,16 @@ export default tseslint.config(
       },
     },
     rules: {
-      // project-specific rules go here
+      // Honor the codebase-wide `_`-prefix convention for intentionally-unused
+      // bindings (stub parser params, Worker-mock signatures, destructured throwaways).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {

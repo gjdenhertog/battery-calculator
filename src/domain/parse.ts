@@ -84,8 +84,8 @@ export async function parseFile(file: File): Promise<ParseFileResult> {
               (err.row ?? 0) + 2, // +2: header is row 1, data rows start at row 2
               err.code ?? 'unknown',
               'valid CSV row',
-              String(err.message ?? ''),
-            ),
+              String(err.message ?? '')
+            )
           )
           return
         }

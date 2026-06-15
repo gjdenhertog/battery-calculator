@@ -90,7 +90,7 @@ describe('initDropZone DOM contract', () => {
     const privacyP = region.querySelector('p.privacy-promise')
     expect(privacyP).not.toBeNull()
     expect(privacyP!.textContent).toContain(
-      'Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden',
+      'Je data blijft op je eigen apparaat — open je netwerktabblad en je ziet 0 verzoeken na het laden'
     )
   })
 
@@ -133,14 +133,18 @@ describe('initDropZone DOM contract', () => {
     expect(region.classList.contains('drop-zone--dragover')).toBe(true)
 
     // Then trigger dragleave with relatedTarget outside the region (null = leaving the document)
-    region.dispatchEvent(new MouseEvent('dragleave', { bubbles: true, cancelable: true, relatedTarget: null }))
+    region.dispatchEvent(
+      new MouseEvent('dragleave', { bubbles: true, cancelable: true, relatedTarget: null })
+    )
     expect(region.classList.contains('drop-zone--dragover')).toBe(false)
     expect(region.classList.contains('drop-zone--idle')).toBe(true)
   })
 
   it('removes aria-dropeffect on dragleave', () => {
     region.dispatchEvent(new MouseEvent('dragover', { bubbles: true, cancelable: true }))
-    region.dispatchEvent(new MouseEvent('dragleave', { bubbles: true, cancelable: true, relatedTarget: null }))
+    region.dispatchEvent(
+      new MouseEvent('dragleave', { bubbles: true, cancelable: true, relatedTarget: null })
+    )
     expect(region.hasAttribute('aria-dropeffect')).toBe(false)
   })
 

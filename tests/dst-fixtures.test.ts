@@ -40,9 +40,9 @@ function parseFixture(filename: string) {
   const content = readFileSync(join(import.meta.dirname, 'fixtures', filename), 'utf-8')
   // Parse with PapaParse synchronously (worker:false for test harness)
   // We parse the raw CSV manually here to call the adapter transform directly
-  const lines = content.split('\n').filter(l => l.trim() !== '')
+  const lines = content.split('\n').filter((l) => l.trim() !== '')
   const headers = lines[0].split(',')
-  const rows: Record<string, string>[] = lines.slice(1).map(line => {
+  const rows: Record<string, string>[] = lines.slice(1).map((line) => {
     const values = line.split(',')
     const row: Record<string, string> = {}
     headers.forEach((h, i) => {
@@ -97,7 +97,7 @@ describe('DST fall-back fixture (2026-10-25)', () => {
     const result = parseFixture('homewizard-fall-2026-10-25.csv')
     // The ambiguous 02:00–02:59 hour runs twice; both passes must map to
     // distinct UTC instants so mergeFiles() does not silently drop 4 intervals.
-    const distinct = new Set(result.samples.map(s => s.timestamp.getTime()))
+    const distinct = new Set(result.samples.map((s) => s.timestamp.getTime()))
     expect(distinct.size).toBe(100)
   })
 
@@ -149,7 +149,12 @@ describe('Real HomeWizard 15-min fixture', () => {
 // day) spanning each transition and asserts zero gaps.
 // ---------------------------------------------------------------------------
 
-function dailySeries(year: number, month1: number, startDay: number, days: number): IntervalSample[] {
+function dailySeries(
+  year: number,
+  month1: number,
+  startDay: number,
+  days: number
+): IntervalSample[] {
   const out: IntervalSample[] = []
   for (let d = 0; d < days; d++) {
     // Local midnight Amsterdam for each successive calendar day.

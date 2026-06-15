@@ -42,7 +42,6 @@ vi.mock('uplot', () => {
   }
 
   const UPlotMock = vi.fn().mockImplementation(function () {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     instanceMethods.root = document.createElement('div')
     return instanceMethods
   }) as ReturnType<typeof vi.fn> & {
@@ -111,10 +110,7 @@ function makeMultiMonthTrace(): TraceRow[] {
  * Sparse trace: only a few days in one month (< 2 full months).
  */
 function makeSparseTrace(): TraceRow[] {
-  return [
-    makeTraceRow('2025-06-15T10:00:00Z', 2.0),
-    makeTraceRow('2025-06-16T10:00:00Z', 1.5),
-  ]
+  return [makeTraceRow('2025-06-15T10:00:00Z', 2.0), makeTraceRow('2025-06-16T10:00:00Z', 1.5)]
 }
 
 function makeSimResult(traceOverride?: TraceRow[]): SimResult {
@@ -340,9 +336,11 @@ describe('initMonthlyBarsChart DOM contract', () => {
     const initialCallCount = MockUPlot.mock.calls.length
 
     // Get the instance that was created
-    const createdInstance = MockUPlot.mock.results[0]?.value as {
-      setData: ReturnType<typeof vi.fn>
-    } | undefined
+    const createdInstance = MockUPlot.mock.results[0]?.value as
+      | {
+          setData: ReturnType<typeof vi.fn>
+        }
+      | undefined
 
     // Update simResults again — should call setData, not create a new chart
     simResults.value = [makeSimResult()]

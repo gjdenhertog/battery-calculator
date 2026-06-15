@@ -34,13 +34,7 @@ export {
 } from './signals'
 
 // Import for internal use in scheduleRecompute.
-import {
-  filteredSamples,
-  activeBatteries,
-  simResults,
-  isComputing,
-  computeError,
-} from './signals'
+import { filteredSamples, activeBatteries, simResults, isComputing, computeError } from './signals'
 
 // ---------------------------------------------------------------------------
 // Worker singleton (Pitfall 4: construct once at module scope, never in effects)
@@ -53,7 +47,7 @@ type SimApi = { runComparison: typeof runComparison }
  * worker script is loaded exactly once per page lifecycle. Never re-constructed
  * on recompute (Pitfall 4 guard).
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
+
 const _simWorker = new SimWorker()
 
 /**
@@ -73,7 +67,7 @@ let _debounceTimer: ReturnType<typeof setTimeout> | null = null
  * Each async worker call captures its own generation at launch; if a newer call
  * fires before the old one resolves, the older result is discarded (T-04-07 guard).
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
+
 let _generation = 0
 
 /**

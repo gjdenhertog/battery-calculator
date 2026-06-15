@@ -83,7 +83,7 @@ export function initTooltips(): void {
         tapped.classList.toggle('term-tooltip--open')
       }
     },
-    { passive: true },
+    { passive: true }
   )
 
   // ── Keyboard Escape ───────────────────────────────────────────────────────

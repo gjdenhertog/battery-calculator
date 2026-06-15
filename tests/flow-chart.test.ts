@@ -93,19 +93,21 @@ function makeWeeklyTrace(): TraceRow[] {
   // Week 1: June 9–15 2025 — low teruglevering
   for (let d = 9; d <= 15; d++) {
     for (let h = 0; h < 24; h++) {
-      rows.push(makeTraceRow(
-        `2025-06-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:00:00Z`,
-        { residualExportKwh: 0.5 }
-      ))
+      rows.push(
+        makeTraceRow(`2025-06-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:00:00Z`, {
+          residualExportKwh: 0.5,
+        })
+      )
     }
   }
   // Week 2: June 16–22 2025 — high teruglevering (representative week)
   for (let d = 16; d <= 22; d++) {
     for (let h = 0; h < 24; h++) {
-      rows.push(makeTraceRow(
-        `2025-06-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:00:00Z`,
-        { residualExportKwh: 3.0 }
-      ))
+      rows.push(
+        makeTraceRow(`2025-06-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:00:00Z`, {
+          residualExportKwh: 3.0,
+        })
+      )
     }
   }
   return rows
@@ -312,9 +314,7 @@ describe('initFlowChart DOM contract', () => {
     dispose = initFlowChart(container)
     simResults.value = [makeSimResult()]
 
-    const swatches = Array.from(
-      container.querySelectorAll<HTMLElement>('.chart-legend__swatch'),
-    )
+    const swatches = Array.from(container.querySelectorAll<HTMLElement>('.chart-legend__swatch'))
     expect(swatches.length).toBe(4) // grid / teruglevering / laden / ontladen
     // Every swatch must have a non-empty backgroundColor set via CSSOM —
     // the old data-series-color attr() approach left them transparent.

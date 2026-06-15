@@ -24,7 +24,7 @@ import { UnsupportedEncodingError } from './types'
  * @throws {UnsupportedEncodingError} When neither UTF-8 nor Windows-1252 can decode the file.
  */
 export async function decodeFileWithFallback(
-  file: File,
+  file: File
 ): Promise<{ text: string; encoding: 'UTF-8' | 'Windows-1252' }> {
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)

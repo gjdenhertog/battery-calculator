@@ -77,8 +77,13 @@ describe('initPeriodControl DOM contract', () => {
   it('both date inputs default to the full merged dataset range (D-19)', () => {
     // Set samples spanning 7 days
     const samples = makeSamples([
-      '2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04',
-      '2025-01-05', '2025-01-06', '2025-01-07',
+      '2025-01-01',
+      '2025-01-02',
+      '2025-01-03',
+      '2025-01-04',
+      '2025-01-05',
+      '2025-01-06',
+      '2025-01-07',
     ])
     parsedSamples.value = samples
 
@@ -118,8 +123,13 @@ describe('initPeriodControl DOM contract', () => {
   it('shows "{N} dagen aan data" for a multi-day dataset (COMP-08)', () => {
     // 7 samples each 1 day apart = ~7 coverage days
     const samples = makeSamples([
-      '2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04',
-      '2025-01-05', '2025-01-06', '2025-01-07',
+      '2025-01-01',
+      '2025-01-02',
+      '2025-01-03',
+      '2025-01-04',
+      '2025-01-05',
+      '2025-01-06',
+      '2025-01-07',
     ])
     parsedSamples.value = samples
 
@@ -146,9 +156,7 @@ describe('initPeriodControl DOM contract', () => {
   // ── DATA-12: "Van" change writes periodFrom.value ─────────────────────────
 
   it('"Van" date change updates periodFrom.value (DATA-12)', () => {
-    const samples = makeSamples([
-      '2025-01-01', '2025-01-15', '2025-01-31',
-    ])
+    const samples = makeSamples(['2025-01-01', '2025-01-15', '2025-01-31'])
     parsedSamples.value = samples
 
     const fromInput = container.querySelector('#period-from') as HTMLInputElement
@@ -165,9 +173,7 @@ describe('initPeriodControl DOM contract', () => {
   })
 
   it('"Tot" date change updates periodTo.value (DATA-12)', () => {
-    const samples = makeSamples([
-      '2025-01-01', '2025-01-15', '2025-01-31',
-    ])
+    const samples = makeSamples(['2025-01-01', '2025-01-15', '2025-01-31'])
     parsedSamples.value = samples
 
     const toInput = container.querySelector('#period-to') as HTMLInputElement

@@ -23,7 +23,11 @@ import { initTooltips } from '../src/ui/tooltips'
  * Create a container with two .term-tooltip spans (the minimum to test toggle behavior).
  * Each span has tabindex="0" and a non-empty data-tooltip value (UX-03 contract).
  */
-function createTooltipFixture(): { container: HTMLElement; spanA: HTMLElement; spanB: HTMLElement } {
+function createTooltipFixture(): {
+  container: HTMLElement
+  spanA: HTMLElement
+  spanB: HTMLElement
+} {
   const container = document.createElement('div')
 
   const spanA = document.createElement('span')
@@ -31,7 +35,7 @@ function createTooltipFixture(): { container: HTMLElement; spanA: HTMLElement; s
   spanA.tabIndex = 0
   spanA.setAttribute(
     'data-tooltip',
-    'De energie die je thuis opwekt en direct zelf gebruikt, in plaats van aan het net te leveren.',
+    'De energie die je thuis opwekt en direct zelf gebruikt, in plaats van aan het net te leveren.'
   )
   spanA.textContent = 'zelfverbruik'
 
@@ -40,7 +44,7 @@ function createTooltipFixture(): { container: HTMLElement; spanA: HTMLElement; s
   spanB.tabIndex = 0
   spanB.setAttribute(
     'data-tooltip',
-    'Stroom die jouw huis terugstuurt naar het net — bij jou zichtbaar als export op de P1-meter.',
+    'Stroom die jouw huis terugstuurt naar het net — bij jou zichtbaar als export op de P1-meter.'
   )
   spanB.textContent = 'teruglevering'
 

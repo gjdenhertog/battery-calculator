@@ -50,8 +50,13 @@ function makeSimResult(overrides: Partial<SimResult> = {}): SimResult {
 /** Build a minimal multi-day IntervalSample array so the period control populates. */
 function makeMultiDaySamples(): IntervalSample[] {
   const dates = [
-    '2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04',
-    '2025-01-05', '2025-01-06', '2025-01-07',
+    '2025-01-01',
+    '2025-01-02',
+    '2025-01-03',
+    '2025-01-04',
+    '2025-01-05',
+    '2025-01-06',
+    '2025-01-07',
   ]
   return dates.map((d) => ({
     timestamp: new Date(`${d}T12:00:00Z`),

@@ -69,14 +69,14 @@ describe('initBatteryPicker DOM contract', () => {
   it('renders 7 catalog battery cards', () => {
     // All catalog cards have data-battery-id that does NOT start with "custom-"
     const catalogCards = Array.from(region.querySelectorAll('li.battery-card')).filter(
-      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-'),
+      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-')
     )
     expect(catalogCards).toHaveLength(BATTERY_CATALOG.length) // 7
   })
 
   it('renders 0 custom battery cards on mount (before add button click)', () => {
     const customCards = Array.from(region.querySelectorAll('li.battery-card')).filter((li) =>
-      (li as HTMLElement).dataset.batteryId?.startsWith('custom-'),
+      (li as HTMLElement).dataset.batteryId?.startsWith('custom-')
     )
     expect(customCards).toHaveLength(0)
   })
@@ -104,7 +104,7 @@ describe('initBatteryPicker DOM contract', () => {
 
   it('non-Sessy 5 cards are not checked on mount', () => {
     const allCheckboxes = Array.from(
-      region.querySelectorAll('input[type="checkbox"]'),
+      region.querySelectorAll('input[type="checkbox"]')
     ) as HTMLInputElement[]
     // Find checkboxes NOT inside the sessy-5 card
     const sessyCard = region.querySelector('[data-battery-id="sessy-5"]')
@@ -186,7 +186,7 @@ describe('initBatteryPicker DOM contract', () => {
 
   it('each catalog card has a <dl class="battery-card__specs">', () => {
     const catalogCards = Array.from(region.querySelectorAll('li.battery-card')).filter(
-      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-'),
+      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-')
     )
     for (const card of catalogCards) {
       const dl = card.querySelector('dl.battery-card__specs')
@@ -196,15 +196,13 @@ describe('initBatteryPicker DOM contract', () => {
 
   it('each catalog card has a swatch with battery-swatch-- class', () => {
     const catalogCards = Array.from(region.querySelectorAll('li.battery-card')).filter(
-      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-'),
+      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-')
     )
     for (const card of catalogCards) {
       const swatch = card.querySelector('.battery-card__swatch')
       expect(swatch).not.toBeNull()
       // Must have one of the battery-swatch--N classes
-      const hasSwatch = Array.from(swatch!.classList).some((c) =>
-        c.startsWith('battery-swatch--'),
-      )
+      const hasSwatch = Array.from(swatch!.classList).some((c) => c.startsWith('battery-swatch--'))
       expect(hasSwatch).toBe(true)
     }
   })
@@ -275,7 +273,10 @@ describe('initBatteryPicker DOM contract', () => {
     expect(swatch.hidden).toBe(false)
 
     // Slot must match what the comparison table would compute:
-    const expectedSlot = colorSlotFor('custom-1', activeBatteries.value.map((b) => b.id))
+    const expectedSlot = colorSlotFor(
+      'custom-1',
+      activeBatteries.value.map((b) => b.id)
+    )
     const hasExpectedClass = swatch.classList.contains(`battery-swatch--${expectedSlot}`)
     expect(hasExpectedClass).toBe(true)
 
@@ -292,7 +293,7 @@ describe('initBatteryPicker DOM contract', () => {
     const swatch = customCard.querySelector('.battery-card__swatch') as HTMLElement
 
     const hasAnySlotClass = Array.from(swatch.classList).some((c) =>
-      c.startsWith('battery-swatch--'),
+      c.startsWith('battery-swatch--')
     )
     // When hidden (no valid custom), no slot class should be present (effect strips them)
     expect(hasAnySlotClass).toBe(false)
@@ -344,7 +345,7 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     getAddBtn().click()
 
     const ids = Array.from(region.querySelectorAll('[data-battery-id^="custom-"]')).map(
-      (el) => (el as HTMLElement).dataset.batteryId,
+      (el) => (el as HTMLElement).dataset.batteryId
     )
     const unique = new Set(ids)
     expect(unique.size).toBe(ids.length) // all ids are unique
@@ -716,7 +717,7 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     const swatch2Before = card2Before.querySelector('.battery-card__swatch') as HTMLElement
     const slotBefore = colorSlotFor(
       'custom-2',
-      activeBatteries.value.map((b) => b.id),
+      activeBatteries.value.map((b) => b.id)
     )
     expect(swatch2Before.classList.contains(`battery-swatch--${slotBefore}`)).toBe(true)
 
@@ -726,7 +727,7 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     // Now custom-2 is at slot 2 (sessy-5 slot 1, custom-2 slot 2)
     const slotAfter = colorSlotFor(
       'custom-2',
-      activeBatteries.value.map((b) => b.id),
+      activeBatteries.value.map((b) => b.id)
     )
     expect(slotAfter).toBeLessThan(slotBefore) // slot decreased
     // The swatch of the surviving card-2 should have updated

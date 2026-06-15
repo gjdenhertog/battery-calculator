@@ -93,7 +93,7 @@ describe('bucketByMonth', () => {
       const buckets = bucketByMonth(rows, AMSTERDAM)
       expect(buckets).toHaveLength(2)
       expect(buckets[0].isPartial).toBe(false) // June full
-      expect(buckets[1].isPartial).toBe(true)  // July partial
+      expect(buckets[1].isPartial).toBe(true) // July partial
     })
   })
 
@@ -168,14 +168,25 @@ describe('bucketByMonth', () => {
 
     it('produces correct NL abbreviated month labels for all months', () => {
       const expected: Record<number, string> = {
-        1: "jan '25", 2: "feb '25", 3: "mrt '25", 4: "apr '25",
-        5: "mei '25", 6: "jun '25", 7: "jul '25", 8: "aug '25",
-        9: "sep '25", 10: "okt '25", 11: "nov '25", 12: "dec '25",
+        1: "jan '25",
+        2: "feb '25",
+        3: "mrt '25",
+        4: "apr '25",
+        5: "mei '25",
+        6: "jun '25",
+        7: "jul '25",
+        8: "aug '25",
+        9: "sep '25",
+        10: "okt '25",
+        11: "nov '25",
+        12: "dec '25",
       }
       for (const [month, label] of Object.entries(expected)) {
         const rows = buildMonthRows(2025, Number(month), 1.0)
         const buckets = bucketByMonth(rows, AMSTERDAM)
-        const firstBucket = buckets.find((b) => b.monthKey === `2025-${String(Number(month)).padStart(2, '0')}`)
+        const firstBucket = buckets.find(
+          (b) => b.monthKey === `2025-${String(Number(month)).padStart(2, '0')}`
+        )
         expect(firstBucket?.monthLabel).toBe(label)
       }
     })

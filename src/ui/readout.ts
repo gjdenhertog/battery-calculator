@@ -87,7 +87,11 @@ function buildSummaryGroup(result: MergeResult): HTMLElement {
   appendField(dl, 'Totaal teruglevering', formatKwh(totalExport))
 
   // Ontbrekende intervallen — gap count (0 → "Geen")
-  appendField(dl, 'Ontbrekende intervallen', result.gapCount === 0 ? 'Geen' : formatRows(result.gapCount))
+  appendField(
+    dl,
+    'Ontbrekende intervallen',
+    result.gapCount === 0 ? 'Geen' : formatRows(result.gapCount)
+  )
 
   group.appendChild(dl)
   return group
@@ -136,7 +140,11 @@ function buildFileGroup(stat: FileStat): HTMLElement {
   appendField(dl, 'Rijen overschreven', formatRows(stat.rowsOverridden))
 
   // Encoding — detected encoding
-  appendField(dl, 'Encoding', stat.encoding === 'Windows-1252' ? 'Windows-1252 (fallback)' : 'UTF-8')
+  appendField(
+    dl,
+    'Encoding',
+    stat.encoding === 'Windows-1252' ? 'Windows-1252 (fallback)' : 'UTF-8'
+  )
 
   group.appendChild(dl)
   return group

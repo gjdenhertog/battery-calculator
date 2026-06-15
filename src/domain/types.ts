@@ -146,10 +146,10 @@ export class ParseRowError extends Error {
     /** Human-readable description of the expected value format */
     public readonly expected: string,
     /** The raw cell value that failed validation */
-    public readonly actual: string,
+    public readonly actual: string
   ) {
     super(
-      `Fout in bestand "${fileName}", rij ${rowNumber}, kolom "${columnName}": verwacht ${expected}, gekregen "${actual}".`,
+      `Fout in bestand "${fileName}", rij ${rowNumber}, kolom "${columnName}": verwacht ${expected}, gekregen "${actual}".`
     )
     this.name = 'ParseRowError'
   }
@@ -164,7 +164,7 @@ export class ParseRowError extends Error {
 export class UnsupportedEncodingError extends Error {
   constructor(
     /** File name that could not be decoded */
-    public readonly fileName: string,
+    public readonly fileName: string
   ) {
     super(`Bestand "${fileName}" heeft een niet-ondersteunde encoding.`)
     this.name = 'UnsupportedEncodingError'

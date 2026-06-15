@@ -20,17 +20,14 @@
 // jsdom does not implement ResizeObserver; chart adapters use it for responsive resize.
 if (typeof globalThis.ResizeObserver === 'undefined') {
   class ResizeObserverMock {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     constructor(_callback: ResizeObserverCallback) {
       // No-op: no actual observation in tests.
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     observe(_target: Element, _options?: ResizeObserverOptions): void {
       // No-op.
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     unobserve(_target: Element): void {
       // No-op.
     }
@@ -51,12 +48,10 @@ if (typeof globalThis.Worker === 'undefined') {
     onmessage: ((event: MessageEvent) => void) | null = null
     onerror: ((event: ErrorEvent) => void) | null = null
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     constructor(_url: string | URL, _options?: WorkerOptions) {
       // No-op: do not actually spin up a worker thread in the test environment.
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     postMessage(_data: unknown, _transfer?: Transferable[]): void {
       // No-op: messages are silently dropped; the response never arrives.
     }
@@ -68,7 +63,7 @@ if (typeof globalThis.Worker === 'undefined') {
     addEventListener(
       _type: string,
       _listener: EventListenerOrEventListenerObject,
-      _options?: boolean | AddEventListenerOptions,
+      _options?: boolean | AddEventListenerOptions
     ): void {
       // No-op.
     }
@@ -76,7 +71,7 @@ if (typeof globalThis.Worker === 'undefined') {
     removeEventListener(
       _type: string,
       _listener: EventListenerOrEventListenerObject,
-      _options?: boolean | EventListenerOptions,
+      _options?: boolean | EventListenerOptions
     ): void {
       // No-op.
     }

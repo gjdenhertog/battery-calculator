@@ -6,7 +6,14 @@
  * nl-NL date formatting behaviours.
  */
 import { describe, it, expect } from 'vitest'
-import { formatKwh, formatPct, formatRatio, formatDate, formatCount, formatAxisKwh } from '../src/helpers/format'
+import {
+  formatKwh,
+  formatPct,
+  formatRatio,
+  formatDate,
+  formatCount,
+  formatAxisKwh,
+} from '../src/helpers/format'
 
 describe('formatKwh', () => {
   it('formats a positive value to exactly 1 decimal place with kWh suffix', () => {
@@ -32,7 +39,7 @@ describe('formatKwh', () => {
 
 describe('formatPct', () => {
   it('formats to 1 decimal place with % suffix', () => {
-    expect(formatPct(42.10)).toBe('42.1 %')
+    expect(formatPct(42.1)).toBe('42.1 %')
   })
 
   it('formats zero', () => {

@@ -23,19 +23,13 @@ function sample(utcMs: number): IntervalSample {
 }
 
 // 5 samples at hourly intervals starting at 2026-01-15 08:00 UTC
-const T0 = Date.UTC(2026, 0, 15, 8, 0, 0)  // 08:00
-const T1 = T0 + 60 * 60 * 1000              // 09:00
-const T2 = T1 + 60 * 60 * 1000              // 10:00
-const T3 = T2 + 60 * 60 * 1000              // 11:00
-const T4 = T3 + 60 * 60 * 1000              // 12:00
+const T0 = Date.UTC(2026, 0, 15, 8, 0, 0) // 08:00
+const T1 = T0 + 60 * 60 * 1000 // 09:00
+const T2 = T1 + 60 * 60 * 1000 // 10:00
+const T3 = T2 + 60 * 60 * 1000 // 11:00
+const T4 = T3 + 60 * 60 * 1000 // 12:00
 
-const SAMPLES: IntervalSample[] = [
-  sample(T0),
-  sample(T1),
-  sample(T2),
-  sample(T3),
-  sample(T4),
-]
+const SAMPLES: IntervalSample[] = [sample(T0), sample(T1), sample(T2), sample(T3), sample(T4)]
 
 describe('filterByPeriod', () => {
   it('returns all samples when both bounds are null (default full range — D-02)', () => {
