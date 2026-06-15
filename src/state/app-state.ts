@@ -101,6 +101,20 @@ export function scheduleRecompute(immediate = false): void {
   }, delay)
 }
 
+/**
+ * Cancel any pending debounced recompute.
+ *
+ * Called from the HMR dispose block so a recompute scheduled just before a hot
+ * reload cannot fire into a freshly-constructed worker singleton (WR-06). No-op
+ * in production where there is no teardown.
+ */
+export function cancelRecompute(): void {
+  if (_debounceTimer !== null) {
+    clearTimeout(_debounceTimer)
+    _debounceTimer = null
+  }
+}
+
 async function _runCompute(): Promise<void> {
   const samples = filteredSamples.value
   const batteries = activeBatteries.value

@@ -12,7 +12,8 @@ import { initDropZone } from './ui/drop-zone'
 import { initBatteryPicker } from './ui/battery-picker'
 import { initPeriodControl } from './ui/period-control'
 import { initComparisonTable } from './ui/comparison-table'
-import { salderingOn, scheduleRecompute } from './state/app-state'
+import { effect } from '@preact/signals-core'
+import { salderingOn, scheduleRecompute, cancelRecompute } from './state/app-state'
 import { initMonthlyBarsChart } from './ui/charts/monthly-bars'
 import { initFlowChart } from './ui/charts/flow-chart'
 import { renderTransparencyPanel } from './ui/transparency-panel'
@@ -60,7 +61,12 @@ if (resultsRegion) {
   const salderingCheckbox = document.createElement('input')
   salderingCheckbox.type = 'checkbox'
   salderingCheckbox.className = 'saldering-options-row__checkbox'
-  salderingCheckbox.checked = salderingOn.value // sync to signal default (false)
+
+  // Two-way bind: mirror salderingOn → checkbox via an effect so the control stays
+  // consistent with the signal even if another writer sets salderingOn (WR-05).
+  const disposeSalderingSync = effect(() => {
+    salderingCheckbox.checked = salderingOn.value
+  })
 
   const salderingLabelText = document.createElement('span')
   salderingLabelText.className = 'saldering-options-row__text'
@@ -106,6 +112,8 @@ if (resultsRegion) {
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
+      cancelRecompute() // WR-06: drop any pending recompute before the worker is rebuilt
+      disposeSalderingSync()
       disposeComparisonTable()
       disposeMonthlyBars()
       disposeFlowChart()

@@ -467,6 +467,68 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     expect(alert.hidden).toBe(false)
   })
 
+  it('rejects a commit when an optional field is out of range (WR-03)', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+    const dodInput = card.querySelector('#custom-1-dod') as HTMLInputElement
+
+    capacityInput.value = '5' // valid capacity
+    dodInput.value = '5000' // 5000% — far above the max of 100
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
+
+    // The whole draft is rejected — no corrupt 50x dodFraction reaches the signal
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).toBeUndefined()
+    const errSpan = card.querySelector('#custom-1-dod-error') as HTMLElement
+    expect(errSpan.hidden).toBe(false)
+    expect(dodInput.classList.contains('input--invalid')).toBe(true)
+  })
+
+  it('an out-of-range optional field is not silently replaced by a default (WR-02)', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+    const effInput = card.querySelector('#custom-1-efficiency') as HTMLInputElement
+
+    capacityInput.value = '5'
+    effInput.value = '0' // below min of 1 — old code silently used the 85% default
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
+
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).toBeUndefined()
+  })
+
+  it('an EMPTY optional field still falls back to the Sessy-5 default (WR-02 boundary)', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+
+    capacityInput.value = '5' // only capacity; optional fields left empty
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
+
+    const entry = customBatteries.value.find((b) => b.id === 'custom-1')
+    expect(entry).not.toBeUndefined()
+    expect(entry!.dodFraction).toBe(1.0)
+    expect(entry!.roundTripEfficiency).toBe(0.85)
+  })
+
+  it('commit button relabels back to "Toevoegen" when a committed card is re-committed invalid (WR-04)', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+    const commit = card.querySelector('.custom-battery-form__commit') as HTMLButtonElement
+
+    capacityInput.value = '5'
+    commit.click()
+    expect(commit.textContent).toBe('Bijwerken')
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).not.toBeUndefined()
+
+    // Clear capacity and re-commit — the entry is dropped, so the label must not lie
+    capacityInput.value = ''
+    commit.click()
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).toBeUndefined()
+    expect(commit.textContent).toBe('Toevoegen aan vergelijking')
+  })
+
   // ── D-03: valid-only cap counting + add-button disable ───────────────────
 
   it('empty draft card does NOT consume a cap slot (D-03)', () => {

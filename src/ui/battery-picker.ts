@@ -317,15 +317,35 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
       nominalCapacityKwh: capacityVal,
     }
 
+    // Validate each optional field against its declared min/max (in input units,
+    // pre-scale). A filled-but-out-of-range value is REJECTED with a visible error
+    // rather than silently discarded and replaced by a default (WR-02 / WR-03):
+    // e.g. dodFraction=50 (5000%) must not flow into the simulation. An EMPTY
+    // optional field is a legitimate "use Sessy-5 default" signal, not an error.
+    let hasFieldError = false
     for (const def of fieldDefs) {
       if (def.field === 'nominalCapacityKwh') continue
       const inp = inputEls.get(def.field)!
+      if (inp.value === '') continue // empty → default applied below
       const raw = parseFloat(inp.value)
-      if (!Number.isNaN(raw) && raw > 0) {
-        const scale = def.scale ?? 1
-        ;(partial as Record<string, unknown>)[def.field] = raw * scale
+      const min = parseFloat(def.min)
+      const max = parseFloat(def.max)
+      if (Number.isNaN(raw) || raw < min || raw > max) {
+        inp.classList.add('input--invalid')
+        const errSpan = form.querySelector(`#${def.id}-error`) as HTMLSpanElement
+        if (errSpan) {
+          errSpan.textContent = `Vul een geldige waarde in (${def.min} – ${def.max}).` // textContent — static numeric bounds
+          errSpan.hidden = false
+        }
+        hasFieldError = true
+        continue
       }
+      const scale = def.scale ?? 1
+      ;(partial as Record<string, unknown>)[def.field] = raw * scale
     }
+
+    // Reject the whole draft if any optional field was filled-but-invalid (WR-03).
+    if (hasFieldError) return null
 
     // Apply defaults for unfilled optional fields (use Sessy 5 defaults)
     if (partial.dodFraction === undefined) partial.dodFraction = 1.0
@@ -343,6 +363,10 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
 
   // ── Commit: the ONLY path that writes customBatteries + recomputes ──────
   function commitCard(): void {
+    // Recompute the alert/label from scratch each commit so no stale "Maximaal 5"
+    // message or "Bijwerken" label survives a state change (WR-04).
+    incompleteAlert.hidden = true
+
     const partial = buildPartialOrNull()
     const prev = customBatteries.value
     const alreadyActive = prev.some(
@@ -356,6 +380,7 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
       incompleteAlert.hidden = false
       if (prev.some((b) => b.id === id)) {
         customBatteries.value = prev.filter((b) => b.id !== id) // D-09 immutable replace
+        commitBtn.textContent = 'Toevoegen aan vergelijking' // entry no longer exists — label must not lie
         scheduleRecompute(true)
       }
       return
@@ -371,7 +396,6 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
 
     // Immutable replace-by-id in customBatteries (D-09, Shared Patterns rule)
     customBatteries.value = [...prev.filter((b) => b.id !== id), partial]
-    incompleteAlert.hidden = true
     commitBtn.textContent = 'Bijwerken' // subsequent commits update the existing entry
     scheduleRecompute(true) // single discrete recompute on explicit commit
   }
@@ -404,6 +428,14 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
   removeBtn.textContent = '× Verwijderen' // textContent — static string
 
   removeBtn.addEventListener('click', () => {
+    // Dispose THIS card's swatch effect before detaching the node (WR-01).
+    // Without this, the per-card effect stays subscribed to customBatteries/
+    // activeBatteries for the page lifetime and re-runs on every reactive update,
+    // touching a detached <span> — the exact "always capture dispose" pitfall.
+    disposeSwatch()
+    const idx = _disposeFns.indexOf(disposeSwatch)
+    if (idx !== -1) _disposeFns.splice(idx, 1)
+
     // Remove this id from customBatteries regardless of fill state (D-04)
     customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
     li.remove()
@@ -411,34 +443,34 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
   })
 
   // ── Per-card swatch effect (D-05): order-based color by id ──────────────
-  // Each card closes over its own swatch element and id.
-  // Effect pushed to _disposeFns so teardownBatteryPicker() disposes it (Pitfall 3).
-  _disposeFns.push(
-    effect(() => {
-      const customs = customBatteries.value
-      const active = activeBatteries.value
-      const isValid = customs.some((b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0)
+  // Each card closes over its own swatch element and id. The disposer is captured
+  // locally so the remove handler can tear it down (WR-01) AND parked in
+  // _disposeFns so teardownBatteryPicker() disposes any survivors (Pitfall 3).
+  const disposeSwatch = effect(() => {
+    const customs = customBatteries.value
+    const active = activeBatteries.value
+    const isValid = customs.some((b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0)
 
-      if (isValid) {
-        // Compute slot matching the comparison table's colorSlotFor call
-        const orderedIds = active.map((b) => b.id)
-        const slot = colorSlotFor(id, orderedIds)
+    if (isValid) {
+      // Compute slot matching the comparison table's colorSlotFor call
+      const orderedIds = active.map((b) => b.id)
+      const slot = colorSlotFor(id, orderedIds)
 
-        // Remove all existing slot classes before applying the new one (CSS class only — D-10)
-        for (let i = 1; i <= 5; i++) {
-          swatch.classList.remove(`battery-swatch--${i}`)
-        }
-        swatch.classList.add(`battery-swatch--${slot}`)
-        swatch.hidden = false
-      } else {
-        // No valid entry for this id — hide the swatch and strip slot classes
-        for (let i = 1; i <= 5; i++) {
-          swatch.classList.remove(`battery-swatch--${i}`)
-        }
-        swatch.hidden = true
+      // Remove all existing slot classes before applying the new one (CSS class only — D-10)
+      for (let i = 1; i <= 5; i++) {
+        swatch.classList.remove(`battery-swatch--${i}`)
       }
-    }),
-  )
+      swatch.classList.add(`battery-swatch--${slot}`)
+      swatch.hidden = false
+    } else {
+      // No valid entry for this id — hide the swatch and strip slot classes
+      for (let i = 1; i <= 5; i++) {
+        swatch.classList.remove(`battery-swatch--${i}`)
+      }
+      swatch.hidden = true
+    }
+  })
+  _disposeFns.push(disposeSwatch)
 
   li.appendChild(swatch)
   li.appendChild(removeBtn)
