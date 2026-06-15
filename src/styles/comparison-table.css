@@ -139,3 +139,32 @@
   color: var(--color-destructive);
   margin-top: var(--space-sm);
 }
+
+/* ── Saldering options row (D-06 / D-10 — no inline styles) ─────────────── */
+/* Sits ABOVE comparison-table-mount as a sibling — survives table re-renders. */
+.saldering-options-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  margin-top: var(--space-sm);
+}
+
+.saldering-options-row__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.saldering-options-row__checkbox {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.saldering-options-row__text {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}

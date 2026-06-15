@@ -12,6 +12,7 @@ import { initDropZone } from './ui/drop-zone'
 import { initBatteryPicker } from './ui/battery-picker'
 import { initPeriodControl } from './ui/period-control'
 import { initComparisonTable } from './ui/comparison-table'
+import { salderingOn, scheduleRecompute } from './state/app-state'
 import { initMonthlyBarsChart } from './ui/charts/monthly-bars'
 import { initFlowChart } from './ui/charts/flow-chart'
 import { renderTransparencyPanel } from './ui/transparency-panel'
@@ -46,6 +47,35 @@ if (dropZoneRegion) {
 const resultsRegion = document.getElementById('results-region')
 if (resultsRegion) {
   initPeriodControl(resultsRegion)
+
+  // Saldering options row — sits OUTSIDE comparison-table-mount so it is NOT wiped by
+  // renderTable's container.innerHTML = '' on each re-render (D-10 / UAT Test 5 pattern).
+  // The checkbox writes salderingOn and calls scheduleRecompute(true) on change (D-06).
+  const salderingOptionsRow = document.createElement('div')
+  salderingOptionsRow.className = 'saldering-options-row'
+
+  const salderingLabel = document.createElement('label')
+  salderingLabel.className = 'saldering-options-row__label'
+
+  const salderingCheckbox = document.createElement('input')
+  salderingCheckbox.type = 'checkbox'
+  salderingCheckbox.className = 'saldering-options-row__checkbox'
+  salderingCheckbox.checked = salderingOn.value // sync to signal default (false)
+
+  const salderingLabelText = document.createElement('span')
+  salderingLabelText.className = 'saldering-options-row__text'
+  salderingLabelText.textContent = "Toon óók 'met saldering' (geldt t/m 2026)"
+
+  salderingLabel.appendChild(salderingCheckbox)
+  salderingLabel.appendChild(salderingLabelText)
+  salderingOptionsRow.appendChild(salderingLabel)
+  resultsRegion.appendChild(salderingOptionsRow)
+
+  salderingCheckbox.addEventListener('change', () => {
+    salderingOn.value = salderingCheckbox.checked
+    scheduleRecompute(true) // discrete event → immediate
+  })
+
   // Create a dedicated mount node for the comparison table AFTER the period control
   // has appended its <section>. This prevents renderEmpty/renderTable/renderError
   // from wiping the period-control section via container.innerHTML = '' (UAT Test 5).
