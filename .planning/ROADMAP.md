@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Battery Simulator and Curated Catalog** - Pure `simulate()` with hand-computed fixture tests; curated NL battery catalog JSON; Sessy 5 kWh default; custom battery support (gap CR-01 mixed-interval residual conservation closed in 03-04) (completed 2026-06-09)
 - [x] **Phase 4: Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State** - `runComparison`, signals state, dropzone, parser+simulator workers (Comlink), comparison table with saldering on/off as side-by-side columns (completed 2026-06-13)
 - [x] **Phase 5: Visualizations, Polish, Transparent-Assumptions UI** - Monthly self-consumption bars + sample-week step-line flow chart; assumptions panel; "no euros" explainer; Dutch copy pass; mobile layout; honest terminology audit (completed 2026-06-14)
-- [ ] **Phase 6: Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering** - Add several user-defined batteries (within the max-5 cap); make the saldering column an opt-in mode that is OFF by default (post-v1; from Phase 4 UAT enhancement notes)
+- [x] **Phase 6: Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering** - Add several user-defined batteries (within the max-5 cap); make the saldering column an opt-in mode that is OFF by default (post-v1; from Phase 4 UAT enhancement notes) (completed 2026-06-15)
 
 ## Phase Details
 
@@ -123,8 +123,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Source**: Phase 4 UAT enhancement notes — "Multiple custom batteries" (Test 4) and "Saldering optional + off by default" (Test 7). Both were enhancements, not defects (the underlying UAT tests passed).
 **Plans**: 3 plans (2 autonomous, 1 with live human-verify)
 - [x] 06-01-PLAN.md — State model: customBatteries collection + salderingOn signal + array-aware activeBatteries (D-09, D-03)
-- [ ] 06-02-PLAN.md — Multi-custom picker: fresh card per click, optional name, per-card remove, valid-only cap, order-based swatches (D-01..D-05)
-- [ ] 06-03-PLAN.md — Saldering toggle: OFF-default single column / ON pair, ON-only disclaimer, options-row mount, live human-verify (D-06..D-08)
+- [x] 06-02-PLAN.md — Multi-custom picker: fresh card per click, optional name, per-card remove, valid-only cap, order-based swatches (D-01..D-05)
+- [x] 06-03-PLAN.md — Saldering toggle: OFF-default single column / ON pair, ON-only disclaimer, options-row mount, live human-verify (D-06..D-08)
 **UI hint**: yes
 
 ## Progress
@@ -139,4 +139,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 8/8 | Complete   | 2026-06-14 |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 5/5 | Complete   | 2026-06-14 |
-| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 1/3 | In Progress|  |
+| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 3/3 | Complete   | 2026-06-15 |
