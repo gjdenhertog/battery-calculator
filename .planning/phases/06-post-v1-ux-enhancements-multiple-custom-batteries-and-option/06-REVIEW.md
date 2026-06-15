@@ -19,7 +19,12 @@ findings:
   warning: 6
   info: 5
   total: 11
-status: issues_found
+status: resolved
+resolution:
+  warnings_fixed: 6
+  info_deferred: 5
+  fix_commit: 1b0f261
+  note: "All 6 warnings (WR-01..WR-06) fixed and tested in commit 1b0f261 (+4 tests, 423 green). The 5 Info items (IN-01..IN-05: magic-number 5, duplicated swatch-strip loop, possibly-unused colorFor export, triplicated cap copy, NL-comma placeholders) are intentionally deferred as non-blocking maintainability nits."
 ---
 
 # Phase 6: Code Review Report
