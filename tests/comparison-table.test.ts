@@ -19,7 +19,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderShell } from '../src/shell'
 import { initComparisonTable } from '../src/ui/comparison-table'
-import { simResults, selectedBatteries, isComputing, computeError } from '../src/state/signals'
+import { simResults, selectedBatteries, isComputing, computeError, salderingOn } from '../src/state/signals'
 import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
 import type { SimResult, BatteryConfig } from '../src/domain/types'
 
@@ -80,6 +80,7 @@ describe('initComparisonTable DOM contract', () => {
     isComputing.value = false
     computeError.value = null
     selectedBatteries.value = [BATTERY_CATALOG[0]]
+    salderingOn.value = false
 
     container = setupResultsRegion()
     dispose = initComparisonTable(container)
@@ -95,11 +96,13 @@ describe('initComparisonTable DOM contract', () => {
     isComputing.value = false
     computeError.value = null
     selectedBatteries.value = [BATTERY_CATALOG[0]]
+    salderingOn.value = false
   })
 
   // ── COMP-02: "zonder saldering" PRECEDES "met saldering" in DOM ────────────
 
-  it('renders "zonder saldering" header before "met saldering" in DOM order (COMP-02)', () => {
+  it('renders "zonder saldering" header before "met saldering" in DOM order when ON (COMP-02)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -113,9 +116,25 @@ describe('initComparisonTable DOM contract', () => {
     expect(zonderIdx).toBeLessThan(metIdx)
   })
 
-  // ── COMP-05: both saldering columns ALWAYS present simultaneously (no toggle) ──
+  // ── COMP-05: single column when OFF; pair when ON (D-07 default OFF) ──────
 
-  it('shows both saldering columns simultaneously — no toggle button for column visibility (COMP-05)', () => {
+  it('shows single column (no zonder/met sub-labels) when salderingOn is false (COMP-05 / D-07)', () => {
+    // salderingOn.value = false (default from beforeEach)
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const headers = container.querySelectorAll('th')
+    const headerTexts = Array.from(headers).map((th) => th.textContent ?? '')
+    // OFF: NO zonder/met sub-labels
+    expect(headerTexts.some((t) => t.includes('zonder saldering'))).toBe(false)
+    expect(headerTexts.some((t) => t.includes('met saldering'))).toBe(false)
+    // Single group header still present
+    expect(headerTexts.some((t) => t.includes('kWh netto-import vermeden'))).toBe(true)
+  })
+
+  it('shows both saldering columns simultaneously when salderingOn is true (COMP-05 / D-07)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -151,6 +170,9 @@ describe('initComparisonTable DOM contract', () => {
   // ── D-02: avoidedOn ≤ 0 renders as-is with .table-cell--negative ──────────
 
   it('renders avoidedOn ≤ 0 with .table-cell--negative and shows the actual value (D-02)', () => {
+    // Saldering must be ON to show the avoidedOn column at all (D-07/D-08)
+    salderingOn.value = true
+
     // Construct a result where avoidedWithSaldering is negative:
     // baseline net = max(0, totalImport - totalExport) = max(0, 100 - 200) = 0
     // battery net  = max(0, residualImport - residualExport) = max(0, 50 - 10) = 40
@@ -180,9 +202,10 @@ describe('initComparisonTable DOM contract', () => {
     expect(avoidedOnCell?.textContent).toMatch(/[−-]/)
   })
 
-  // ── COMP-06: disclaimer hidden by default; "i" button toggles it ──────────
+  // ── COMP-06: disclaimer shown (hidden by default) when ON; "i" button toggles ─
 
-  it('saldering disclaimer is hidden by default (COMP-06)', () => {
+  it('saldering disclaimer is present and hidden by default when salderingOn is true (COMP-06)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -193,6 +216,7 @@ describe('initComparisonTable DOM contract', () => {
   })
 
   it('clicking the "i" button removes hidden from the disclaimer (COMP-06)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -209,6 +233,7 @@ describe('initComparisonTable DOM contract', () => {
   })
 
   it('clicking the "i" button again re-hides the disclaimer (COMP-06)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -352,7 +377,7 @@ describe('initComparisonTable DOM contract', () => {
     expect(indicator).not.toBeNull()
   })
 
-  it('renders 2 battery rows once simResults catches up to 2 (mismatch resolved)', () => {
+  it('renders two battery rows once simResults catches up to 2 (mismatch resolved)', () => {
     const batteryA = makeBattery({ id: 'batt-a', name: 'Battery A' })
     const batteryB = makeBattery({ id: 'batt-b', name: 'Battery B', nominalCapacityKwh: 10 })
 
@@ -386,12 +411,39 @@ describe('initComparisonTable DOM contract', () => {
     expect(allElements.length).toBe(0)
   })
 
+  // ── Leader on avoidedOff in OFF mode applies correctly ─────────────────────
+
+  it('leader highlight lands on avoidedOff column when salderingOn is false (D-07)', () => {
+    // salderingOn.value = false (default from beforeEach)
+    const batteryA = makeBattery({ id: 'batt-a', name: 'Battery A', nominalCapacityKwh: 5 })
+    const batteryB = makeBattery({ id: 'batt-b', name: 'Battery B', nominalCapacityKwh: 10 })
+    const resultA = makeSimResult({ shiftedKwh: 100 })
+    const resultB = makeSimResult({ shiftedKwh: 200 })
+
+    selectedBatteries.value = [batteryA, batteryB]
+    simResults.value = [resultA, resultB]
+
+    // Battery B (index 1) should be leader for avoidedOff
+    const rows = container.querySelectorAll('.battery-row')
+    expect(rows.length).toBe(2)
+
+    const rowB = rows[1]
+    const avoidedOffCell = rowB.querySelector('[data-metric="avoidedOff"]')
+    expect(avoidedOffCell).not.toBeNull()
+    expect(avoidedOffCell?.classList.contains('table-cell--leader')).toBe(true)
+
+    // No avoidedOn cells when OFF
+    const avoidedOnCell = container.querySelector('td[data-metric="avoidedOn"]')
+    expect(avoidedOnCell).toBeNull()
+  })
+
   // ── Content lock: SALDERING_DISCLAIMER_COPY is factually correct (UAT Test 7) ──
   //
   // Saldering is 100% t/m 2026 and abolished fully on 2027-01-01.
   // The rejected "64% afbouw vanaf 2026" proposal never took effect — it must NOT appear.
 
   it('disclaimer text mentions "2027" and does NOT contain stale "64%" copy (UAT Test 7)', () => {
+    salderingOn.value = true
     const battery = makeBattery()
     selectedBatteries.value = [battery]
     simResults.value = [makeSimResult()]
@@ -404,5 +456,141 @@ describe('initComparisonTable DOM contract', () => {
     expect(text).toContain('2027')
     // Must NOT contain the stale "64%" rejected-proposal copy
     expect(text).not.toContain('64%')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Saldering toggle (D-06..D-08)
+// ---------------------------------------------------------------------------
+
+describe('saldering toggle (D-06..D-08)', () => {
+  let container: HTMLElement
+  let dispose: (() => void) | null = null
+
+  beforeEach(() => {
+    simResults.value = null
+    isComputing.value = false
+    computeError.value = null
+    selectedBatteries.value = [BATTERY_CATALOG[0]]
+    salderingOn.value = false
+
+    container = setupResultsRegion()
+    dispose = initComparisonTable(container)
+  })
+
+  afterEach(() => {
+    if (dispose) {
+      dispose()
+      dispose = null
+    }
+    simResults.value = null
+    isComputing.value = false
+    computeError.value = null
+    selectedBatteries.value = [BATTERY_CATALOG[0]]
+    salderingOn.value = false
+  })
+
+  // ── D-07: single column when OFF ──────────────────────────────────────────
+
+  it('OFF: no #saldering-disclaimer in the DOM (D-08)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.querySelector('#saldering-disclaimer')).toBeNull()
+  })
+
+  it('OFF: no .saldering-info-btn in the DOM (D-08)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.querySelector('.saldering-info-btn')).toBeNull()
+  })
+
+  it('OFF: no .saldering-negative-note in the DOM (D-08)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    // Use a negative avoidedOn result to confirm note is suppressed
+    simResults.value = [makeSimResult({
+      totalImportKwh: 100,
+      totalExportKwh: 200,
+      residualImportKwh: 50,
+      residualExportKwh: 10,
+      shiftedKwh: 50,
+    })]
+
+    expect(container.querySelector('.saldering-negative-note')).toBeNull()
+  })
+
+  it('OFF: only one td per row for the avoidedOff metric (no avoidedOn td) (D-07)', () => {
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.querySelector('td[data-metric="avoidedOff"]')).not.toBeNull()
+    expect(container.querySelector('td[data-metric="avoidedOn"]')).toBeNull()
+  })
+
+  // ── D-07 + D-08: ON path ─────────────────────────────────────────────────
+
+  it('ON: shows zonder|met pair of headers (D-07)', () => {
+    salderingOn.value = true
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    const headerTexts = Array.from(container.querySelectorAll('th')).map((th) => th.textContent ?? '')
+    expect(headerTexts.some((t) => t.includes('zonder saldering'))).toBe(true)
+    expect(headerTexts.some((t) => t.includes('met saldering'))).toBe(true)
+  })
+
+  it('ON: #saldering-disclaimer is present in the DOM (D-08)', () => {
+    salderingOn.value = true
+    const battery = makeBattery()
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.querySelector('#saldering-disclaimer')).not.toBeNull()
+  })
+
+  it('ON: .saldering-negative-note appears when avoidedOn <= 0 (D-08)', () => {
+    salderingOn.value = true
+    const battery = makeBattery()
+    // Construct a result with negative avoidedOn
+    simResults.value = [makeSimResult({
+      totalImportKwh: 100,
+      totalExportKwh: 200,
+      residualImportKwh: 50,
+      residualExportKwh: 10,
+      shiftedKwh: 50,
+    })]
+    selectedBatteries.value = [battery]
+
+    expect(container.querySelector('.saldering-negative-note')).not.toBeNull()
+  })
+
+  it('ON: .saldering-negative-note is absent when all avoidedOn > 0 (D-08)', () => {
+    salderingOn.value = true
+    const battery = makeBattery()
+    // shiftedKwh=120.5 results in positive avoidedOn in default fixture
+    simResults.value = [makeSimResult()]
+    selectedBatteries.value = [battery]
+
+    // Normal result — no negative note
+    expect(container.querySelector('.saldering-negative-note')).toBeNull()
+  })
+
+  // ── XSS safety still holds with salderingOn=true ──────────────────────────
+
+  it('script-named battery name is still inert text when salderingOn is true (T-04-13)', () => {
+    salderingOn.value = true
+    const maliciousName = '<script>alert("xss")</script>'
+    const battery = makeBattery({ id: 'xss-battery', name: maliciousName })
+    selectedBatteries.value = [battery]
+    simResults.value = [makeSimResult()]
+
+    expect(container.querySelectorAll('script').length).toBe(0)
+    expect(container.textContent).toContain(maliciousName)
   })
 })
