@@ -273,10 +273,12 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
     form.appendChild(fieldLabel)
   }
 
-  // ── Debounced validation + signal write (D-07: 400ms) ───────────────────
-  let _debounce: ReturnType<typeof setTimeout> | null = null
-
-  function validateAndWrite(): void {
+  // ── Inline validation (no signal write, no recompute) ───────────────────
+  // Edits only update field-level error UI. The customBatteries signal — and
+  // therefore the worker recompute — is touched ONLY when the user clicks the
+  // "Toevoegen" commit button (commitCard below). This keeps editing a custom
+  // battery cheap: the full simulation no longer fires on every keystroke.
+  function buildPartialOrNull(): BatteryConfig | null {
     const capacityInput = inputEls.get('nominalCapacityKwh')!
     const capacityVal = parseFloat(capacityInput.value)
 
@@ -291,27 +293,18 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
       if (errSpan) errSpan.hidden = true
     }
 
-    if (!isCapacityValid && capacityInput.value !== '') {
-      // Mark capacity field invalid
-      capacityInput.classList.add('input--invalid')
-      const errSpan = form.querySelector(`#${id}-capacity-error`) as HTMLSpanElement
-      if (errSpan) {
-        errSpan.textContent = 'Vul een geldige capaciteit in (0,1 – 200 kWh).' // textContent — static string
-        errSpan.hidden = false
-      }
-      // Remove this id from customBatteries (immutable replace — D-09)
-      customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
-      incompleteAlert.hidden = false
-      scheduleRecompute(false) // debounced for continuous input
-      return
-    }
-
     if (!isCapacityValid) {
-      // Capacity empty — not yet filled; remove stale entry if any
-      customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
-      incompleteAlert.hidden = false
-      scheduleRecompute(false)
-      return
+      // Only surface the field error once the user has typed something invalid;
+      // an empty capacity field is a pristine draft, not an error.
+      if (capacityInput.value !== '') {
+        capacityInput.classList.add('input--invalid')
+        const errSpan = form.querySelector(`#${id}-capacity-error`) as HTMLSpanElement
+        if (errSpan) {
+          errSpan.textContent = 'Vul een geldige capaciteit in (0,1 – 200 kWh).' // textContent — static string
+          errSpan.hidden = false
+        }
+      }
+      return null
     }
 
     // Resolve name: trimmed input value, or fall back to defaultName (D-02)
@@ -340,41 +333,68 @@ function buildCustomCard(id: string, n: number): HTMLLIElement {
     if (partial.maxChargeKw === undefined) partial.maxChargeKw = 2.2
     if (partial.maxDischargeKw === undefined) partial.maxDischargeKw = 1.7
 
-    // Immutable replace-by-id in customBatteries (D-09, Shared Patterns rule)
-    customBatteries.value = [
-      ...customBatteries.value.filter((b) => b.id !== id),
-      partial as BatteryConfig,
-    ]
-    incompleteAlert.hidden = true
-    scheduleRecompute(false) // debounced (D-07)
+    return partial as BatteryConfig
   }
 
-  function scheduledValidate(): void {
-    if (_debounce !== null) clearTimeout(_debounce)
-    _debounce = setTimeout(validateAndWrite, 400)
+  // Live inline validation only — never writes signals or recomputes.
+  function validateInline(): void {
+    buildPartialOrNull()
   }
 
-  // Wire input + blur events (UI-SPEC §2: validate on blur/input debounced)
-  for (const inp of inputEls.values()) {
-    inp.addEventListener('input', scheduledValidate)
-    inp.addEventListener('blur', () => {
-      // Blur fires immediately (not debounced) for better UX feedback
-      if (_debounce !== null) {
-        clearTimeout(_debounce)
-        _debounce = null
+  // ── Commit: the ONLY path that writes customBatteries + recomputes ──────
+  function commitCard(): void {
+    const partial = buildPartialOrNull()
+    const prev = customBatteries.value
+    const alreadyActive = prev.some(
+      (b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0,
+    )
+
+    if (!partial) {
+      // Invalid draft: surface the incomplete note and drop any stale entry.
+      incompleteAlert.textContent =
+        'Eigen batterij niet meegenomen — vul minimaal de capaciteit in.' // textContent — static string
+      incompleteAlert.hidden = false
+      if (prev.some((b) => b.id === id)) {
+        customBatteries.value = prev.filter((b) => b.id !== id) // D-09 immutable replace
+        scheduleRecompute(true)
       }
-      validateAndWrite()
-    })
-  }
-  // Name field: also re-validate on blur/input to pick up name changes
-  nameInput.addEventListener('input', scheduledValidate)
-  nameInput.addEventListener('blur', () => {
-    if (_debounce !== null) {
-      clearTimeout(_debounce)
-      _debounce = null
+      return
     }
-    validateAndWrite()
+
+    // Cap guard: block committing a NEW custom past the 5-battery cap (D-03).
+    if (!alreadyActive && activeBatteries.value.length >= MAX_SELECTED) {
+      incompleteAlert.textContent =
+        'Maximaal 5 batterijen — verwijder er eerst één.' // textContent — static string
+      incompleteAlert.hidden = false
+      return
+    }
+
+    // Immutable replace-by-id in customBatteries (D-09, Shared Patterns rule)
+    customBatteries.value = [...prev.filter((b) => b.id !== id), partial]
+    incompleteAlert.hidden = true
+    commitBtn.textContent = 'Bijwerken' // subsequent commits update the existing entry
+    scheduleRecompute(true) // single discrete recompute on explicit commit
+  }
+
+  // Wire input + blur events to inline validation only (no recompute).
+  for (const inp of inputEls.values()) {
+    inp.addEventListener('input', validateInline)
+    inp.addEventListener('blur', validateInline)
+  }
+  nameInput.addEventListener('input', validateInline)
+  nameInput.addEventListener('blur', validateInline)
+
+  // ── Commit button (bottom of the form) — applies the draft to the table ──
+  const commitBtn = document.createElement('button')
+  commitBtn.type = 'submit'
+  commitBtn.className = 'custom-battery-form__commit'
+  commitBtn.textContent = 'Toevoegen aan vergelijking' // textContent — static string
+  commitBtn.addEventListener('click', (e) => {
+    e.preventDefault() // form is novalidate; we own validation + commit
+    commitCard()
   })
+  form.addEventListener('submit', (e) => e.preventDefault())
+  form.appendChild(commitBtn)
 
   // ── × Verwijderen remove button (D-04) ──────────────────────────────────
   const removeBtn = document.createElement('button')

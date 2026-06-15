@@ -384,9 +384,10 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     // Type a custom name
     nameInput.value = 'Mijn accu'
 
-    // Fill capacity to make it valid — blur triggers immediate validateAndWrite
+    // Fill capacity, then click the commit button to apply the draft
     capacityInput.value = '5'
     capacityInput.dispatchEvent(new Event('blur'))
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
 
     const entry = customBatteries.value.find((b) => b.id === 'custom-1')
     expect(entry).not.toBeUndefined()
@@ -403,13 +404,67 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     // Leave name empty
     nameInput.value = ''
 
-    // Fill capacity and blur to trigger validation
+    // Fill capacity, then commit
     capacityInput.value = '5'
-    capacityInput.dispatchEvent(new Event('blur'))
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
 
     const entry = customBatteries.value.find((b) => b.id === 'custom-1')
     expect(entry).not.toBeUndefined()
     expect(entry!.name).toBe('Eigen batterij 1') // falls back to default
+  })
+
+  // ── Deferred commit: recompute only on explicit button click (perf) ──────
+
+  it('each custom card has a commit button at the bottom of the form', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const form = card.querySelector('.custom-battery-form') as HTMLFormElement
+    const commit = form.querySelector('.custom-battery-form__commit') as HTMLButtonElement
+    expect(commit).not.toBeNull()
+    // Must be the LAST child of the form (bottom of the form)
+    expect(form.lastElementChild).toBe(commit)
+    expect(commit.textContent).toBe('Toevoegen aan vergelijking')
+  })
+
+  it('editing capacity does NOT write customBatteries until commit is clicked', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+
+    // Type a valid capacity and fire input + blur — the old behavior would have
+    // written the signal here. The new deferred model must NOT.
+    capacityInput.value = '5'
+    capacityInput.dispatchEvent(new Event('input'))
+    capacityInput.dispatchEvent(new Event('blur'))
+
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).toBeUndefined()
+
+    // Only the explicit commit writes the entry
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).not.toBeUndefined()
+  })
+
+  it('commit button relabels to "Bijwerken" after a successful commit', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
+    const commit = card.querySelector('.custom-battery-form__commit') as HTMLButtonElement
+
+    capacityInput.value = '5'
+    commit.click()
+    expect(commit.textContent).toBe('Bijwerken')
+  })
+
+  it('committing an invalid (empty capacity) draft does not write customBatteries', () => {
+    getAddBtn().click()
+    const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
+    const commit = card.querySelector('.custom-battery-form__commit') as HTMLButtonElement
+
+    commit.click() // no capacity entered
+
+    expect(customBatteries.value.find((b) => b.id === 'custom-1')).toBeUndefined()
+    const alert = card.querySelector('.custom-battery-incomplete') as HTMLElement
+    expect(alert.hidden).toBe(false)
   })
 
   // ── D-03: valid-only cap counting + add-button disable ───────────────────
@@ -497,11 +552,11 @@ describe('multiple custom batteries (D-01..D-05)', () => {
   it('clicking × Verwijderen removes valid entry from customBatteries signal (D-04)', () => {
     getAddBtn().click()
 
-    // Make it a valid entry
+    // Make it a valid entry (fill + commit)
     const card = region.querySelector('[data-battery-id="custom-1"]') as HTMLElement
     const capacityInput = card.querySelector('#custom-1-capacity') as HTMLInputElement
     capacityInput.value = '5'
-    capacityInput.dispatchEvent(new Event('blur'))
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
 
     expect(customBatteries.value.find((b) => b.id === 'custom-1')).not.toBeUndefined()
 
@@ -628,9 +683,9 @@ describe('multiple custom batteries (D-01..D-05)', () => {
     // Set a malicious name
     nameInput.value = '<script>alert("xss")</script>'
 
-    // Trigger validateAndWrite
+    // Fill capacity, then commit
     capacityInput.value = '5'
-    capacityInput.dispatchEvent(new Event('blur'))
+    ;(card.querySelector('.custom-battery-form__commit') as HTMLButtonElement).click()
 
     // The name should be stored as text, not parsed as HTML
     const entry = customBatteries.value.find((b) => b.id === 'custom-1')
