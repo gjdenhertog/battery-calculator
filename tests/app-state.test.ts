@@ -22,7 +22,6 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import {
   parsedSamples,
   selectedBatteries,
-  customBattery,
   customBatteries,
   salderingOn,
   periodFrom,
@@ -55,7 +54,6 @@ const ONE_DAY_MS = 86_400_000
 beforeEach(() => {
   parsedSamples.value = []
   selectedBatteries.value = [BATTERY_CATALOG[0]]
-  customBattery.value = null
   customBatteries.value = []
   salderingOn.value = false
   periodFrom.value = null
@@ -78,10 +76,6 @@ describe('initial signal values', () => {
     expect(selectedBatteries.value).toHaveLength(1)
     expect(selectedBatteries.value[0]).toBe(BATTERY_CATALOG[0])
     expect(selectedBatteries.value[0].id).toBe('sessy-5')
-  })
-
-  it('customBattery starts as null', () => {
-    expect(customBattery.value).toBeNull()
   })
 
   it('periodFrom starts as null (open left = full range)', () => {
@@ -201,23 +195,46 @@ describe('coverageDays computed', () => {
 // ---------------------------------------------------------------------------
 
 describe('activeBatteries computed', () => {
-  it('returns selectedBatteries when customBattery is null', () => {
+  it('returns selectedBatteries when customBatteries is empty (D-09)', () => {
     expect(activeBatteries.value).toHaveLength(1)
     expect(activeBatteries.value[0].id).toBe('sessy-5')
   })
 
-  it('excludes a customBattery with nominalCapacityKwh = 0 (invalid — T-04-06)', () => {
-    customBattery.value = { nominalCapacityKwh: 0 }
+  it('excludes a custom battery with nominalCapacityKwh = 0 (invalid — T-04-06)', () => {
+    customBatteries.value = [
+      {
+        id: 'invalid-1',
+        name: 'Invalid',
+        nominalCapacityKwh: 0,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
     expect(activeBatteries.value).toHaveLength(1)
   })
 
-  it('excludes a customBattery with missing nominalCapacityKwh (T-04-06)', () => {
-    customBattery.value = { name: 'Custom' }
+  it('excludes a custom battery with missing nominalCapacityKwh (T-04-06)', () => {
+    // nominalCapacityKwh defaults to 0 for undefined — use 0 explicitly
+    customBatteries.value = [
+      {
+        id: 'invalid-2',
+        name: 'No Capacity',
+        nominalCapacityKwh: 0,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
     expect(activeBatteries.value).toHaveLength(1)
   })
 
-  it('appends a valid customBattery (nominalCapacityKwh > 0) at the end', () => {
-    const custom: Partial<BatteryConfig> = {
+  it('appends a valid custom battery (nominalCapacityKwh > 0) at the end', () => {
+    const custom: BatteryConfig = {
       id: 'my-battery',
       name: 'My Battery',
       nominalCapacityKwh: 10,
@@ -227,7 +244,7 @@ describe('activeBatteries computed', () => {
       maxDischargeKw: 3,
       datasheetUrl: 'https://example.com',
     }
-    customBattery.value = custom
+    customBatteries.value = [custom]
 
     const result = activeBatteries.value
     expect(result).toHaveLength(2)
@@ -241,9 +258,20 @@ describe('activeBatteries computed', () => {
     expect(activeBatteries.value).toHaveLength(2)
   })
 
-  it('preserves selection order (selectedBatteries first, customBattery last)', () => {
+  it('preserves selection order (selectedBatteries first, customBatteries last)', () => {
     selectedBatteries.value = [BATTERY_CATALOG[1], BATTERY_CATALOG[0]]
-    customBattery.value = { nominalCapacityKwh: 5, id: 'custom' } as Partial<BatteryConfig>
+    customBatteries.value = [
+      {
+        id: 'custom',
+        name: 'Eigen batterij',
+        nominalCapacityKwh: 5,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
 
     const result = activeBatteries.value
     expect(result).toHaveLength(3)

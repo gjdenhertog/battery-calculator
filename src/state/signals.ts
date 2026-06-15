@@ -7,10 +7,11 @@
  * app-state.ts re-exports everything from here and adds the Comlink worker
  * singleton + scheduleRecompute on top. Test only THIS module, not app-state.ts.
  *
- * Signal contract (Phase 4 UI-SPEC Signals State Contract):
+ * Signal contract (Phase 4 UI-SPEC Signals State Contract, updated Phase 6 D-09):
  *   parsedSamples     — raw merged samples from the last successful CSV parse
  *   selectedBatteries — batteries checked in the picker (default: [BATTERY_CATALOG[0]] = Sessy 5)
- *   customBattery     — partial BatteryConfig from the custom form, or null
+ *   customBatteries   — collection of user-defined custom batteries (default: [])
+ *   salderingOn       — whether to show saldering columns in the comparison table (default: false)
  *   periodFrom        — lower period bound (Date) or null (full range)
  *   periodTo          — upper period bound (Date) or null (full range)
  *   simResults        — last worker result array, or null
@@ -20,7 +21,8 @@
  * Computed contract:
  *   filteredSamples   — parsedSamples filtered by [periodFrom, periodTo] (DATA-12)
  *   coverageDays      — calendar days spanned by filteredSamples (0 if <2 samples)
- *   activeBatteries   — selectedBatteries + valid customBattery appended (if nominalCapacityKwh > 0)
+ *   activeBatteries   — selectedBatteries + valid customBatteries appended in array order
+ *                       (only those with nominalCapacityKwh > 0 are included, D-03)
  */
 import { signal, computed } from '@preact/signals-core'
 import type { IntervalSample, BatteryConfig, SimResult } from '../domain/types'
@@ -38,10 +40,17 @@ export const parsedSamples = signal<IntervalSample[]>([])
 export const selectedBatteries = signal<BatteryConfig[]>([BATTERY_CATALOG[0]])
 
 /**
- * Partial config from the custom battery form, or null when not configured.
- * Only appended to activeBatteries when nominalCapacityKwh > 0 (T-04-06).
+ * Collection of user-defined custom batteries. Initial: empty array (D-09).
+ * Only entries with nominalCapacityKwh > 0 are appended to activeBatteries (T-04-06 / D-03).
+ * Array order is preserved — no sorting applied (D-05).
  */
-export const customBattery = signal<Partial<BatteryConfig> | null>(null)
+export const customBatteries = signal<BatteryConfig[]>([])
+
+/**
+ * Whether to show saldering ("met saldering") columns in the comparison table.
+ * Default: false (D-06: saldering off by default post-2027 phase-out context).
+ */
+export const salderingOn = signal<boolean>(false)
 
 /** Lower period bound for filtering samples. Null = open left (full range). */
 export const periodFrom = signal<Date | null>(null)
@@ -84,11 +93,13 @@ export const coverageDays = computed(() => {
 
 /**
  * Active battery set for the next runComparison call.
- * selectedBatteries with a valid customBattery appended at the end.
- * A custom battery is valid when nominalCapacityKwh > 0 (T-04-06 DoS guard).
+ * selectedBatteries with valid customBatteries appended at the end in array order.
+ * A custom battery is valid when nominalCapacityKwh > 0 (T-04-06 DoS guard / D-03).
+ * Array order among customs is preserved — no sorting (D-05).
  */
 export const activeBatteries = computed(() => {
-  const cb = customBattery.value
-  const valid = cb !== null && (cb.nominalCapacityKwh ?? 0) > 0 ? [cb as BatteryConfig] : []
-  return [...selectedBatteries.value, ...valid]
+  const validCustoms = customBatteries.value.filter(
+    (cb) => (cb.nominalCapacityKwh ?? 0) > 0,
+  )
+  return [...selectedBatteries.value, ...validCustoms]
 })
