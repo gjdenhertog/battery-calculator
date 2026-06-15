@@ -122,7 +122,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Both behaviors are covered by tests, introduce no inline styles (style-src 'self' CSP), and the comparison still recomputes correctly through the existing Comlink worker pipeline.
 **Source**: Phase 4 UAT enhancement notes — "Multiple custom batteries" (Test 4) and "Saldering optional + off by default" (Test 7). Both were enhancements, not defects (the underlying UAT tests passed).
 **Plans**: 3 plans (2 autonomous, 1 with live human-verify)
-- [ ] 06-01-PLAN.md — State model: customBatteries collection + salderingOn signal + array-aware activeBatteries (D-09, D-03)
+- [x] 06-01-PLAN.md — State model: customBatteries collection + salderingOn signal + array-aware activeBatteries (D-09, D-03)
 - [ ] 06-02-PLAN.md — Multi-custom picker: fresh card per click, optional name, per-card remove, valid-only cap, order-based swatches (D-01..D-05)
 - [ ] 06-03-PLAN.md — Saldering toggle: OFF-default single column / ON pair, ON-only disclaimer, options-row mount, live human-verify (D-06..D-08)
 **UI hint**: yes
@@ -139,4 +139,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 8/8 | Complete   | 2026-06-14 |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 5/5 | Complete   | 2026-06-14 |
-| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 0/3 | Planned | - |
+| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 1/3 | In Progress|  |
