@@ -115,13 +115,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 6: Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering
 **Goal**: Two consumer-requested enhancements surfaced during Phase 4 UAT (see `04-UAT.md` → "Enhancement Notes"), deferred from v1: (1) let users add MORE THAN ONE custom battery to the comparison, and (2) make the saldering treatment an optional mode that is OFF by default so the post-2027 "zonder saldering" reality is the headline.
 **Depends on**: Phase 5
-**Requirements**: TBD (derive during /gsd-plan-phase)
+**Requirements**: BATT-05, COMP-04, COMP-05, COMP-06 (extended from v1; this phase adds no new requirement IDs — it extends existing ones)
 **Success Criteria** (what must be TRUE):
   1. A user can define and add multiple custom batteries (each via the "+ Eigen batterij" flow), all appearing as their own comparison columns, still bounded by the max-5 total selection cap; each custom battery keeps a consistent, distinct swatch color across picker and table.
   2. Saldering is OFF by default: on first render the comparison shows only the "zonder saldering" (post-2027) reality. A clearly-labelled toggle lets the user opt in to also show the "met saldering" column; the corrected policy copy (saldering 100% t/m 2026, volledig afgeschaft 2027-01-01, wettelijk minimum terugleververgoeding 50% t/m 2030) is surfaced when the mode is on.
   3. Both behaviors are covered by tests, introduce no inline styles (style-src 'self' CSP), and the comparison still recomputes correctly through the existing Comlink worker pipeline.
 **Source**: Phase 4 UAT enhancement notes — "Multiple custom batteries" (Test 4) and "Saldering optional + off by default" (Test 7). Both were enhancements, not defects (the underlying UAT tests passed).
-**Plans**: TBD (run /gsd-plan-phase 6 to break down)
+**Plans**: 3 plans (2 autonomous, 1 with live human-verify)
+- [ ] 06-01-PLAN.md — State model: customBatteries collection + salderingOn signal + array-aware activeBatteries (D-09, D-03)
+- [ ] 06-02-PLAN.md — Multi-custom picker: fresh card per click, optional name, per-card remove, valid-only cap, order-based swatches (D-01..D-05)
+- [ ] 06-03-PLAN.md — Saldering toggle: OFF-default single column / ON pair, ON-only disclaimer, options-row mount, live human-verify (D-06..D-08)
 **UI hint**: yes
 
 ## Progress
@@ -136,4 +139,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Battery Simulator and Curated Catalog | 4/4 | Complete   | 2026-06-09 |
 | 4. Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State | 8/8 | Complete   | 2026-06-14 |
 | 5. Visualizations, Polish, Transparent-Assumptions UI | 5/5 | Complete   | 2026-06-14 |
-| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 0/TBD | Not started | - |
+| 6. Post-v1 UX Enhancements — Multiple Custom Batteries + Optional Saldering | 0/3 | Planned | - |
