@@ -3,13 +3,13 @@
  *
  * initBatteryPicker() wires the battery card grid inside #drop-zone-region.
  * Renders spec cards from BATTERY_CATALOG; Sessy 5 pre-checked (BATT-03).
- * Custom "+ Eigen batterij" card at the end (D-06).
+ * "+ Eigen batterij" add button appends fresh editable custom cards (D-01).
  *
  * XSS safety: ALL user-derived strings (custom battery name) use .textContent.
- * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP).
+ * No inline style assignments — all state via CSS class swaps (style-src 'self' CSP, D-10).
  */
 import { effect } from '@preact/signals-core'
-import { selectedBatteries, customBattery, activeBatteries, scheduleRecompute } from '../state/app-state'
+import { selectedBatteries, customBatteries, activeBatteries, scheduleRecompute } from '../state/app-state'
 import { BATTERY_CATALOG } from '../domain/battery-catalog'
 import type { BatteryConfig } from '../domain/types'
 import { colorSlotFor } from '../helpers/color'
@@ -110,34 +110,36 @@ function buildSpecCard(
 }
 
 // ---------------------------------------------------------------------------
-// Custom battery card builder
+// Custom battery card builder (generalized for N cards, D-01..D-05)
 // ---------------------------------------------------------------------------
 
-function buildCustomCard(): HTMLLIElement {
+/**
+ * Build a custom battery editable <li> card for id and ordinal n.
+ * Each card closes over its own id and swatch element to enable per-card
+ * reactive swatch slot updates (D-05).
+ *
+ * @param id       - Unique card id, e.g. 'custom-1', 'custom-2', ...
+ * @param n        - Ordinal used for the default name 'Eigen batterij N' (D-02).
+ */
+function buildCustomCard(id: string, n: number): HTMLLIElement {
+  const defaultName = `Eigen batterij ${n}` // static prefix + integer — XSS safe
+
   const li = document.createElement('li')
   li.className = 'battery-card battery-card--custom'
-  li.dataset.batteryId = 'custom'
+  li.dataset.batteryId = id
 
-  // Expand/collapse button
-  const expandBtn = document.createElement('button')
-  expandBtn.type = 'button'
-  expandBtn.className = 'battery-card__expand'
-  expandBtn.setAttribute('aria-expanded', 'false')
-  expandBtn.textContent = '+ Eigen batterij' // textContent — XSS safe; static string
-
-  // Color swatch for the custom battery card (COMP-04/D-11 color consistency).
-  // Slot class updated reactively by the custom swatch effect in initBatteryPicker.
-  // Hidden by default; shown only when a valid custom battery is active.
-  // Color is applied via battery-swatch--N CSS class only — no inline style (style-src 'self' CSP).
+  // Color swatch for this custom battery card (COMP-04/D-11 color consistency).
+  // Slot class updated reactively by the per-card swatch effect below.
+  // Hidden by default; shown only when a valid entry for this id is in customBatteries.
+  // Color is applied via battery-swatch--N CSS class only — no inline style (D-10 CSP).
   const swatch = document.createElement('span')
   swatch.className = 'battery-card__swatch'
   swatch.hidden = true
 
-  // Custom battery form (initially hidden)
+  // Custom battery form
   const form = document.createElement('form')
   form.className = 'custom-battery-form'
   form.setAttribute('novalidate', '')
-  form.hidden = true
 
   // Status alert for incomplete custom battery
   const incompleteAlert = document.createElement('span')
@@ -146,6 +148,25 @@ function buildCustomCard(): HTMLLIElement {
   incompleteAlert.hidden = true
   incompleteAlert.textContent =
     'Eigen batterij niet meegenomen — vul minimaal de capaciteit in.' // textContent — static string
+
+  // ── Name field (D-02) — optional, pre-filled with 'Eigen batterij N' ────
+  const nameFieldLabel = document.createElement('label')
+  nameFieldLabel.className = 'custom-battery-form__label'
+
+  const nameLabelText = document.createElement('span')
+  nameLabelText.className = 'custom-battery-form__label-text'
+  nameLabelText.textContent = 'Naam (optioneel)' // textContent — static string
+
+  const nameInput = document.createElement('input')
+  nameInput.type = 'text'
+  nameInput.id = `${id}-name`
+  nameInput.className = 'custom-battery-form__name'
+  nameInput.value = defaultName // pre-fill with 'Eigen batterij N'
+  nameInput.setAttribute('aria-label', `Naam eigen batterij ${n}`) // static pattern string
+
+  nameFieldLabel.appendChild(nameLabelText)
+  nameFieldLabel.appendChild(nameInput)
+  form.appendChild(nameFieldLabel)
 
   // ── Field definitions — placeholders use Sessy 5 defaults (UI-SPEC §2) ──
   const fieldDefs: Array<{
@@ -168,7 +189,7 @@ function buildCustomCard(): HTMLLIElement {
   }> = [
     {
       label: 'Capaciteit (kWh)',
-      id: 'custom-capacity',
+      id: `${id}-capacity`,
       min: '0.1',
       step: '0.1',
       max: '200',
@@ -178,7 +199,7 @@ function buildCustomCard(): HTMLLIElement {
     },
     {
       label: 'Bruikbaar (%)',
-      id: 'custom-dod',
+      id: `${id}-dod`,
       min: '1',
       step: '1',
       max: '100',
@@ -188,7 +209,7 @@ function buildCustomCard(): HTMLLIElement {
     },
     {
       label: 'Rendement (%)',
-      id: 'custom-efficiency',
+      id: `${id}-efficiency`,
       min: '1',
       step: '1',
       max: '100',
@@ -198,7 +219,7 @@ function buildCustomCard(): HTMLLIElement {
     },
     {
       label: 'Max laden (kW)',
-      id: 'custom-charge',
+      id: `${id}-charge`,
       min: '0.1',
       step: '0.1',
       max: '100',
@@ -207,7 +228,7 @@ function buildCustomCard(): HTMLLIElement {
     },
     {
       label: 'Max ontladen (kW)',
-      id: 'custom-discharge',
+      id: `${id}-discharge`,
       min: '0.1',
       step: '0.1',
       max: '100',
@@ -273,29 +294,33 @@ function buildCustomCard(): HTMLLIElement {
     if (!isCapacityValid && capacityInput.value !== '') {
       // Mark capacity field invalid
       capacityInput.classList.add('input--invalid')
-      const errSpan = form.querySelector(`#custom-capacity-error`) as HTMLSpanElement
+      const errSpan = form.querySelector(`#${id}-capacity-error`) as HTMLSpanElement
       if (errSpan) {
         errSpan.textContent = 'Vul een geldige capaciteit in (0,1 – 200 kWh).' // textContent — static string
         errSpan.hidden = false
       }
-      customBattery.value = null
+      // Remove this id from customBatteries (immutable replace — D-09)
+      customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
       incompleteAlert.hidden = false
       scheduleRecompute(false) // debounced for continuous input
       return
     }
 
     if (!isCapacityValid) {
-      // Capacity empty — not yet filled
-      customBattery.value = null
+      // Capacity empty — not yet filled; remove stale entry if any
+      customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
       incompleteAlert.hidden = false
       scheduleRecompute(false)
       return
     }
 
+    // Resolve name: trimmed input value, or fall back to defaultName (D-02)
+    const resolvedName = nameInput.value.trim() || defaultName
+
     // Build partial BatteryConfig from filled fields
     const partial: Partial<BatteryConfig> & { nominalCapacityKwh: number } = {
-      id: 'custom',
-      name: 'Eigen batterij',
+      id, // unique per-card id (D-09)
+      name: resolvedName, // textContent-safe: only stored, rendered by other components via textContent
       nominalCapacityKwh: capacityVal,
     }
 
@@ -315,7 +340,11 @@ function buildCustomCard(): HTMLLIElement {
     if (partial.maxChargeKw === undefined) partial.maxChargeKw = 2.2
     if (partial.maxDischargeKw === undefined) partial.maxDischargeKw = 1.7
 
-    customBattery.value = partial as BatteryConfig
+    // Immutable replace-by-id in customBatteries (D-09, Shared Patterns rule)
+    customBatteries.value = [
+      ...customBatteries.value.filter((b) => b.id !== id),
+      partial as BatteryConfig,
+    ]
     incompleteAlert.hidden = true
     scheduleRecompute(false) // debounced (D-07)
   }
@@ -337,26 +366,62 @@ function buildCustomCard(): HTMLLIElement {
       validateAndWrite()
     })
   }
-
-  // ── Toggle expand/collapse ───────────────────────────────────────────────
-  expandBtn.addEventListener('click', () => {
-    const isExpanded = expandBtn.getAttribute('aria-expanded') === 'true'
-    expandBtn.setAttribute('aria-expanded', String(!isExpanded))
-    form.hidden = isExpanded
-    incompleteAlert.hidden = isExpanded
-
-    if (!isExpanded) {
-      // Expanding — trigger initial validate to set signal state
-      validateAndWrite()
-    } else {
-      // Collapsing — clear custom battery from signal
-      customBattery.value = null
-      scheduleRecompute(true)
+  // Name field: also re-validate on blur/input to pick up name changes
+  nameInput.addEventListener('input', scheduledValidate)
+  nameInput.addEventListener('blur', () => {
+    if (_debounce !== null) {
+      clearTimeout(_debounce)
+      _debounce = null
     }
+    validateAndWrite()
   })
 
+  // ── × Verwijderen remove button (D-04) ──────────────────────────────────
+  const removeBtn = document.createElement('button')
+  removeBtn.type = 'button'
+  removeBtn.className = 'battery-card__remove'
+  removeBtn.setAttribute('aria-label', `Verwijder ${defaultName}`) // static pattern string
+  removeBtn.textContent = '× Verwijderen' // textContent — static string
+
+  removeBtn.addEventListener('click', () => {
+    // Remove this id from customBatteries regardless of fill state (D-04)
+    customBatteries.value = customBatteries.value.filter((b) => b.id !== id)
+    li.remove()
+    scheduleRecompute(true) // discrete change — immediate
+  })
+
+  // ── Per-card swatch effect (D-05): order-based color by id ──────────────
+  // Each card closes over its own swatch element and id.
+  // Effect pushed to _disposeFns so teardownBatteryPicker() disposes it (Pitfall 3).
+  _disposeFns.push(
+    effect(() => {
+      const customs = customBatteries.value
+      const active = activeBatteries.value
+      const isValid = customs.some((b) => b.id === id && (b.nominalCapacityKwh ?? 0) > 0)
+
+      if (isValid) {
+        // Compute slot matching the comparison table's colorSlotFor call
+        const orderedIds = active.map((b) => b.id)
+        const slot = colorSlotFor(id, orderedIds)
+
+        // Remove all existing slot classes before applying the new one (CSS class only — D-10)
+        for (let i = 1; i <= 5; i++) {
+          swatch.classList.remove(`battery-swatch--${i}`)
+        }
+        swatch.classList.add(`battery-swatch--${slot}`)
+        swatch.hidden = false
+      } else {
+        // No valid entry for this id — hide the swatch and strip slot classes
+        for (let i = 1; i <= 5; i++) {
+          swatch.classList.remove(`battery-swatch--${i}`)
+        }
+        swatch.hidden = true
+      }
+    }),
+  )
+
   li.appendChild(swatch)
-  li.appendChild(expandBtn)
+  li.appendChild(removeBtn)
   li.appendChild(form)
   li.appendChild(incompleteAlert)
   return li
@@ -381,10 +446,11 @@ function buildCapNote(): HTMLParagraphElement {
  * Wire the battery spec-card picker inside the given region.
  *
  * Renders a <section aria-label="Batterijkeuze"> with a card grid of all
- * BATTERY_CATALOG entries, pre-checking Sessy 5 (BATT-03). Appends a custom
- * battery card at the end (D-06). Enforces a max-5 selection cap (BATT-05).
+ * BATTERY_CATALOG entries, pre-checking Sessy 5 (BATT-03). Adds a
+ * "+ Eigen batterij" button that appends custom battery cards (D-01).
+ * Enforces a max-5 selection cap across catalog + valid custom batteries (BATT-05, D-03).
  *
- * Writes selectedBatteries and customBattery signals on interaction.
+ * Writes selectedBatteries and customBatteries signals on interaction.
  * Calls scheduleRecompute(true) on discrete selection changes.
  *
  * @param region - The #drop-zone-region HTMLElement.
@@ -442,16 +508,35 @@ export function initBatteryPicker(region: HTMLElement): void {
     ul.appendChild(li)
   }
 
-  // ── Custom battery card ────────────────────────────────────────────────
-  const customCard = buildCustomCard()
-  ul.appendChild(customCard)
-
   section.appendChild(ul)
 
   // ── Cap note (shown/hidden by reactive effect) ─────────────────────────
   const capNote = buildCapNote()
   capNote.hidden = true
   section.appendChild(capNote)
+
+  // ── "+ Eigen batterij" add button (D-01) ────────────────────────────────
+  // Ordinal counter in closure — increments on each card creation (stable unique ids).
+  let _customOrdinal = 0
+
+  const addBtn = document.createElement('button')
+  addBtn.type = 'button'
+  addBtn.className = 'battery-picker__add'
+  addBtn.textContent = '+ Eigen batterij' // textContent — static string
+
+  addBtn.addEventListener('click', () => {
+    // Guard: cap on valid batteries (catalog selected + valid customs)
+    if (activeBatteries.value.length >= MAX_SELECTED) return
+
+    const n = ++_customOrdinal
+    const cardId = `custom-${n}`
+    const newCard = buildCustomCard(cardId, n)
+    // Insert before the add-button's container (section), appending to the ul
+    ul.appendChild(newCard)
+    // Do NOT call scheduleRecompute on empty draft — fires when user fills capacity (D-03)
+  })
+
+  section.appendChild(addBtn)
 
   region.appendChild(section)
 
@@ -460,7 +545,10 @@ export function initBatteryPicker(region: HTMLElement): void {
     effect(() => {
       const selected = selectedBatteries.value
       const selectedIds = selected.map((b) => b.id)
-      const atCap = selected.length >= MAX_SELECTED
+      // atCap counts activeBatteries (includes valid customs) to drive both cap note
+      // and add-button disabled state (D-03)
+      const active = activeBatteries.value
+      const atCap = active.length >= MAX_SELECTED
 
       for (const battery of catalogBatteries) {
         const li = cardMap.get(battery.id)!
@@ -495,38 +583,10 @@ export function initBatteryPicker(region: HTMLElement): void {
 
       // Show/hide cap note
       capNote.hidden = !atCap
-    }),
-  )
 
-  // ── Reactive effect: update custom card swatch (COMP-04 / D-11 color consistency) ─────
-  // Reads customBattery and activeBatteries (a computed over selectedBatteries + customBattery)
-  // so the effect re-runs whenever either selection order or the custom battery changes.
-  // Swatch color applied via battery-swatch--N CSS class only — no inline style (style-src 'self' CSP).
-  // Effect pushed to _disposeFns so teardownBatteryPicker() disposes it (Pitfall 3).
-  const customSwatch = customCard.querySelector('.battery-card__swatch') as HTMLSpanElement
-  _disposeFns.push(
-    effect(() => {
-      const cb = customBattery.value
-      const isValid = cb !== null && (cb.nominalCapacityKwh ?? 0) > 0
-
-      if (isValid) {
-        // Compute slot matching the comparison table's colorSlotFor call
-        const orderedIds = activeBatteries.value.map((b) => b.id)
-        const slot = colorSlotFor('custom', orderedIds)
-
-        // Remove all existing slot classes before applying the new one
-        for (let i = 1; i <= 5; i++) {
-          customSwatch.classList.remove(`battery-swatch--${i}`)
-        }
-        customSwatch.classList.add(`battery-swatch--${slot}`)
-        customSwatch.hidden = false
-      } else {
-        // No valid custom battery — hide the swatch and strip slot classes
-        for (let i = 1; i <= 5; i++) {
-          customSwatch.classList.remove(`battery-swatch--${i}`)
-        }
-        customSwatch.hidden = true
-      }
+      // Enable/disable add button based on valid-battery cap (D-03)
+      addBtn.disabled = atCap
+      addBtn.classList.toggle('battery-picker__add--disabled', atCap)
     }),
   )
 }
