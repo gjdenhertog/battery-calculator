@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 6 shipped — pushed to origin/main (phases 2–6 published)
+status: Phase 6 shipped & deployed — origin/main live at gjdenhertog.github.io/battery-calculator (CI green)
 stopped_at: Phase 6 context gathered
-last_updated: "2026-06-15T20:13:33.450Z"
+last_updated: "2026-06-15T20:25:14.609Z"
 last_activity: 2026-06-15
 progress:
   total_phases: 6
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 
 Phase: 06 — COMPLETE
 Plan: 1 of 3
-Status: Phase 6 shipped — pushed to origin/main (phases 2–6 published)
+Status: Phase 6 shipped & deployed — origin/main live at gjdenhertog.github.io/battery-calculator (CI green)
 Last activity: 2026-06-15
 
 Progress: [██████████] 100%
