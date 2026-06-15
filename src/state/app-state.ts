@@ -21,7 +21,8 @@ import { batch } from '@preact/signals-core'
 export {
   parsedSamples,
   selectedBatteries,
-  customBattery,
+  customBatteries,
+  salderingOn,
   periodFrom,
   periodTo,
   simResults,

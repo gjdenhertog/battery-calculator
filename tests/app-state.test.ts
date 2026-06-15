@@ -16,12 +16,14 @@
  *   - coverageDays computed for a 2-sample fixture spanning N days
  *   - activeBatteries computed with/without a valid customBattery
  *   - Integration: setting parsedSamples makes filteredSamples reflect it (Task 2 re-wire)
+ *   - customBatteries collection + salderingOn boolean signal contract (Phase 6 D-09, D-06)
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   parsedSamples,
   selectedBatteries,
-  customBattery,
+  customBatteries,
+  salderingOn,
   periodFrom,
   periodTo,
   simResults,
@@ -52,7 +54,8 @@ const ONE_DAY_MS = 86_400_000
 beforeEach(() => {
   parsedSamples.value = []
   selectedBatteries.value = [BATTERY_CATALOG[0]]
-  customBattery.value = null
+  customBatteries.value = []
+  salderingOn.value = false
   periodFrom.value = null
   periodTo.value = null
   simResults.value = null
@@ -73,10 +76,6 @@ describe('initial signal values', () => {
     expect(selectedBatteries.value).toHaveLength(1)
     expect(selectedBatteries.value[0]).toBe(BATTERY_CATALOG[0])
     expect(selectedBatteries.value[0].id).toBe('sessy-5')
-  })
-
-  it('customBattery starts as null', () => {
-    expect(customBattery.value).toBeNull()
   })
 
   it('periodFrom starts as null (open left = full range)', () => {
@@ -196,23 +195,46 @@ describe('coverageDays computed', () => {
 // ---------------------------------------------------------------------------
 
 describe('activeBatteries computed', () => {
-  it('returns selectedBatteries when customBattery is null', () => {
+  it('returns selectedBatteries when customBatteries is empty (D-09)', () => {
     expect(activeBatteries.value).toHaveLength(1)
     expect(activeBatteries.value[0].id).toBe('sessy-5')
   })
 
-  it('excludes a customBattery with nominalCapacityKwh = 0 (invalid — T-04-06)', () => {
-    customBattery.value = { nominalCapacityKwh: 0 }
+  it('excludes a custom battery with nominalCapacityKwh = 0 (invalid — T-04-06)', () => {
+    customBatteries.value = [
+      {
+        id: 'invalid-1',
+        name: 'Invalid',
+        nominalCapacityKwh: 0,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
     expect(activeBatteries.value).toHaveLength(1)
   })
 
-  it('excludes a customBattery with missing nominalCapacityKwh (T-04-06)', () => {
-    customBattery.value = { name: 'Custom' }
+  it('excludes a custom battery with missing nominalCapacityKwh (T-04-06)', () => {
+    // nominalCapacityKwh defaults to 0 for undefined — use 0 explicitly
+    customBatteries.value = [
+      {
+        id: 'invalid-2',
+        name: 'No Capacity',
+        nominalCapacityKwh: 0,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
     expect(activeBatteries.value).toHaveLength(1)
   })
 
-  it('appends a valid customBattery (nominalCapacityKwh > 0) at the end', () => {
-    const custom: Partial<BatteryConfig> = {
+  it('appends a valid custom battery (nominalCapacityKwh > 0) at the end', () => {
+    const custom: BatteryConfig = {
       id: 'my-battery',
       name: 'My Battery',
       nominalCapacityKwh: 10,
@@ -222,7 +244,7 @@ describe('activeBatteries computed', () => {
       maxDischargeKw: 3,
       datasheetUrl: 'https://example.com',
     }
-    customBattery.value = custom
+    customBatteries.value = [custom]
 
     const result = activeBatteries.value
     expect(result).toHaveLength(2)
@@ -236,14 +258,87 @@ describe('activeBatteries computed', () => {
     expect(activeBatteries.value).toHaveLength(2)
   })
 
-  it('preserves selection order (selectedBatteries first, customBattery last)', () => {
+  it('preserves selection order (selectedBatteries first, customBatteries last)', () => {
     selectedBatteries.value = [BATTERY_CATALOG[1], BATTERY_CATALOG[0]]
-    customBattery.value = { nominalCapacityKwh: 5, id: 'custom' } as Partial<BatteryConfig>
+    customBatteries.value = [
+      {
+        id: 'custom',
+        name: 'Eigen batterij',
+        nominalCapacityKwh: 5,
+        dodFraction: 1.0,
+        roundTripEfficiency: 0.85,
+        maxChargeKw: 2.2,
+        maxDischargeKw: 1.7,
+        datasheetUrl: 'https://example.com',
+      },
+    ]
 
     const result = activeBatteries.value
     expect(result).toHaveLength(3)
     expect(result[0].id).toBe(BATTERY_CATALOG[1].id)
     expect(result[1].id).toBe(BATTERY_CATALOG[0].id)
     expect(result[2].id).toBe('custom')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Fixture helpers for customBatteries tests
+// ---------------------------------------------------------------------------
+
+function makeBattery(overrides: Partial<BatteryConfig> = {}): BatteryConfig {
+  return {
+    id: 'custom-1',
+    name: 'Eigen batterij 1',
+    nominalCapacityKwh: 5,
+    dodFraction: 1.0,
+    roundTripEfficiency: 0.85,
+    maxChargeKw: 2.2,
+    maxDischargeKw: 1.7,
+    datasheetUrl: 'https://example.com',
+    ...overrides,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// customBatteries + salderingOn signal contract (Phase 6 D-09, D-06)
+// ---------------------------------------------------------------------------
+
+describe('customBatteries + salderingOn signal contract', () => {
+  it('salderingOn defaults to false (D-06)', () => {
+    expect(salderingOn.value).toBe(false)
+  })
+
+  it('customBatteries defaults to [] and activeBatteries equals [BATTERY_CATALOG[0]] with default selection', () => {
+    expect(customBatteries.value).toEqual([])
+    expect(activeBatteries.value).toHaveLength(1)
+    expect(activeBatteries.value.map((b) => b.id)).toEqual(['sessy-5'])
+  })
+
+  it('pushing one valid custom (nominalCapacityKwh: 6) makes activeBatteries length 2 with the custom last', () => {
+    const valid = makeBattery({ id: 'custom-1', nominalCapacityKwh: 6 })
+    customBatteries.value = [valid]
+
+    const result = activeBatteries.value
+    expect(result).toHaveLength(2)
+    expect(result[0].id).toBe('sessy-5')
+    expect(result[1].id).toBe('custom-1')
+  })
+
+  it('a custom with nominalCapacityKwh: 0 is excluded from activeBatteries (length stays 1)', () => {
+    const invalid = makeBattery({ id: 'custom-1', nominalCapacityKwh: 0 })
+    customBatteries.value = [invalid]
+
+    expect(activeBatteries.value).toHaveLength(1)
+    expect(activeBatteries.value.map((b) => b.id)).toEqual(['sessy-5'])
+  })
+
+  it('two valid customs appear in activeBatteries in array order (custom-1 before custom-2)', () => {
+    const first = makeBattery({ id: 'custom-1', nominalCapacityKwh: 4 })
+    const second = makeBattery({ id: 'custom-2', nominalCapacityKwh: 8, name: 'Eigen batterij 2' })
+    customBatteries.value = [first, second]
+
+    const result = activeBatteries.value
+    expect(result).toHaveLength(3)
+    expect(result.map((b) => b.id)).toEqual(['sessy-5', 'custom-1', 'custom-2'])
   })
 })
