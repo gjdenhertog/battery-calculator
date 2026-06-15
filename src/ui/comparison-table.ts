@@ -12,7 +12,7 @@
  *               D-02, D-08, D-09, D-10, D-11, D-12, D-13, D-14, SIM-08
  */
 import { effect } from '@preact/signals-core'
-import { simResults, activeBatteries, isComputing, computeError } from '../state/app-state'
+import { simResults, activeBatteries, isComputing, computeError, salderingOn } from '../state/app-state'
 import { deriveMetrics, detectLeaders } from '../helpers/metrics'
 import { colorSlotFor } from '../helpers/color'
 import { formatKwh, formatPct, formatRatio } from '../helpers/format'
@@ -97,7 +97,7 @@ function removeComputeIndicator(container: HTMLElement): void {
 // Table header builder (two-row thead: group + label)
 // ---------------------------------------------------------------------------
 
-function buildThead(table: HTMLTableElement): void {
+function buildThead(table: HTMLTableElement, showSaldering: boolean): void {
   const thead = document.createElement('thead')
 
   // Row 1: group headers
@@ -110,21 +110,31 @@ function buildThead(table: HTMLTableElement): void {
   thBatterij.dataset.metric = 'batterij'
   groupRow.appendChild(thBatterij)
 
-  // Parent header spanning columns 2+3 (kWh netto-import vermeden)
-  const thSalderingGroup = document.createElement('th')
-  thSalderingGroup.setAttribute('colspan', '2')
-  thSalderingGroup.className = 'col-saldering-group__header'
-  thSalderingGroup.textContent = 'kWh netto-import vermeden'
-  // Info button for saldering disclaimer (COMP-06)
-  const infoBtn = document.createElement('button')
-  infoBtn.className = 'saldering-info-btn'
-  infoBtn.setAttribute('aria-expanded', 'false')
-  infoBtn.setAttribute('aria-controls', 'saldering-disclaimer')
-  infoBtn.setAttribute('aria-label', 'Meer over de salderingsvereenvoudiging')
-  infoBtn.type = 'button'
-  infoBtn.textContent = 'i'
-  thSalderingGroup.appendChild(infoBtn)
-  groupRow.appendChild(thSalderingGroup)
+  if (showSaldering) {
+    // ON path: colspan-2 group header + info button (Phase 4 layout)
+    const thSalderingGroup = document.createElement('th')
+    thSalderingGroup.setAttribute('colspan', '2')
+    thSalderingGroup.className = 'col-saldering-group__header'
+    thSalderingGroup.textContent = 'kWh netto-import vermeden'
+    // Info button for saldering disclaimer (COMP-06)
+    const infoBtn = document.createElement('button')
+    infoBtn.className = 'saldering-info-btn'
+    infoBtn.setAttribute('aria-expanded', 'false')
+    infoBtn.setAttribute('aria-controls', 'saldering-disclaimer')
+    infoBtn.setAttribute('aria-label', 'Meer over de salderingsvereenvoudiging')
+    infoBtn.type = 'button'
+    infoBtn.textContent = 'i'
+    thSalderingGroup.appendChild(infoBtn)
+    groupRow.appendChild(thSalderingGroup)
+  } else {
+    // OFF path: single column, rowspan=2, no info button, no zonder/met sub-labels (D-07)
+    const thSingle = document.createElement('th')
+    thSingle.setAttribute('rowspan', '2')
+    thSingle.className = 'col-saldering-group__header'
+    thSingle.textContent = 'kWh netto-import vermeden'
+    thSingle.dataset.metric = 'avoidedOff'
+    groupRow.appendChild(thSingle)
+  }
 
   const thZelfverbruik = document.createElement('th')
   thZelfverbruik.setAttribute('rowspan', '2')
@@ -159,21 +169,24 @@ function buildThead(table: HTMLTableElement): void {
 
   thead.appendChild(groupRow)
 
-  // Row 2: sub-label headers for the saldering pair (COMP-02: zonder first)
+  // Row 2: sub-label headers — only rendered when showSaldering is true (D-07)
   const labelRow = document.createElement('tr')
   labelRow.className = 'thead-label-row'
 
-  const thZonder = document.createElement('th')
-  thZonder.className = 'col-primary'
-  thZonder.textContent = 'zonder saldering'
-  thZonder.dataset.metric = 'avoidedOff'
-  labelRow.appendChild(thZonder)
+  if (showSaldering) {
+    const thZonder = document.createElement('th')
+    thZonder.className = 'col-primary'
+    thZonder.textContent = 'zonder saldering'
+    thZonder.dataset.metric = 'avoidedOff'
+    labelRow.appendChild(thZonder)
 
-  const thMet = document.createElement('th')
-  thMet.className = 'col-muted'
-  thMet.textContent = 'met saldering'
-  thMet.dataset.metric = 'avoidedOn'
-  labelRow.appendChild(thMet)
+    const thMet = document.createElement('th')
+    thMet.className = 'col-muted'
+    thMet.textContent = 'met saldering'
+    thMet.dataset.metric = 'avoidedOn'
+    labelRow.appendChild(thMet)
+  }
+  // When OFF, labelRow is empty — the rowspan=2 single header spans both rows
 
   thead.appendChild(labelRow)
   table.appendChild(thead)
@@ -214,6 +227,7 @@ function buildBatteryRow(
   rowIdx: number,
   orderedIds: string[],
   leaders: Map<string, number>,
+  showSaldering: boolean,
 ): HTMLTableRowElement {
   const usableCapacity = battery.nominalCapacityKwh * battery.dodFraction
   const m = deriveMetrics(result, usableCapacity)
@@ -249,26 +263,29 @@ function buildBatteryRow(
   )
   tr.appendChild(avoidedOffCell)
 
-  // Column 3: kWh netto-import vermeden — met saldering (muted)
+  // Column 3 (ON only): kWh netto-import vermeden — met saldering (muted)
   // D-02: negative values shown as-is with .table-cell--negative, NOT floored.
   // Only apply the destructive red when the value is genuinely negative (< 0);
   // avoidedOn === 0 is a neutral result — no minus sign, no red (WR-04).
-  const avoidedOnNegative = m.avoidedOn < 0  // strictly negative — not zero
-  // Format with U+2212 proper minus sign for negative values
-  const avoidedOnText = m.avoidedOn < 0
-    ? `−${formatKwh(Math.abs(m.avoidedOn))}`
-    : formatKwh(m.avoidedOn)
-  const avoidedOnClasses = ['col-muted']
-  if (avoidedOnNegative) avoidedOnClasses.push('table-cell--negative')
-  const avoidedOnCell = createMetricCell(
-    avoidedOnText,
-    'avoidedOn',
-    'met saldering',
-    rowIdx,
-    leaders,
-    avoidedOnClasses,
-  )
-  tr.appendChild(avoidedOnCell)
+  // Only appended to the row when showSaldering is true (D-07).
+  if (showSaldering) {
+    const avoidedOnNegative = m.avoidedOn < 0  // strictly negative — not zero
+    // Format with U+2212 proper minus sign for negative values
+    const avoidedOnText = m.avoidedOn < 0
+      ? `−${formatKwh(Math.abs(m.avoidedOn))}`
+      : formatKwh(m.avoidedOn)
+    const avoidedOnClasses = ['col-muted']
+    if (avoidedOnNegative) avoidedOnClasses.push('table-cell--negative')
+    const avoidedOnCell = createMetricCell(
+      avoidedOnText,
+      'avoidedOn',
+      'met saldering',
+      rowIdx,
+      leaders,
+      avoidedOnClasses,
+    )
+    tr.appendChild(avoidedOnCell)
+  }
 
   // Column 4: Zelfverbruik %
   tr.appendChild(createMetricCell(
@@ -342,6 +359,7 @@ function renderTable(
   container: HTMLElement,
   results: SimResult[],
   batteries: BatteryConfig[],
+  showSaldering: boolean,
 ): void {
   container.innerHTML = ''
 
@@ -371,33 +389,35 @@ function renderTable(
   const table = document.createElement('table')
   table.className = 'comparison-table'
 
-  buildThead(table)
+  buildThead(table, showSaldering)
 
   const tbody = document.createElement('tbody')
   batteries.forEach((battery, i) => {
     // Defensive: skip any index without a corresponding result (belt-and-suspenders;
     // the effect-level guard above is the primary defence against mismatched lengths).
     if (i >= results.length) return
-    tbody.appendChild(buildBatteryRow(battery, results[i], i, orderedIds, leaders))
+    tbody.appendChild(buildBatteryRow(battery, results[i], i, orderedIds, leaders, showSaldering))
   })
   table.appendChild(tbody)
   scrollWrapper.appendChild(table)
   container.appendChild(scrollWrapper)
 
-  // Saldering disclaimer (COMP-06 / D-14) — below the table, hidden by default
-  const disclaimer = document.createElement('div')
-  disclaimer.id = 'saldering-disclaimer'
-  disclaimer.className = 'saldering-disclaimer'
-  disclaimer.hidden = true
-  disclaimer.textContent = SALDERING_DISCLAIMER_COPY // textContent — static locked copy
-  container.appendChild(disclaimer)
+  // Saldering disclaimer (COMP-06 / D-14) — only emitted when showSaldering is true (D-08)
+  if (showSaldering) {
+    const disclaimer = document.createElement('div')
+    disclaimer.id = 'saldering-disclaimer'
+    disclaimer.className = 'saldering-disclaimer'
+    disclaimer.hidden = true
+    disclaimer.textContent = SALDERING_DISCLAIMER_COPY // textContent — static locked copy
+    container.appendChild(disclaimer)
 
-  // Wire the "i" button to toggle the disclaimer
-  wireSalderingDisclaimer(container)
+    // Wire the "i" button to toggle the disclaimer
+    wireSalderingDisclaimer(container)
+  }
 
-  // Negative-ON note (D-02) — below the table when any battery's avoidedOn <= 0
+  // Negative-ON note (D-02) — only when showSaldering is true and some avoidedOn <= 0 (D-08)
   const hasNegativeOn = allMetrics.some((m) => m.avoidedOn <= 0)
-  if (hasNegativeOn) {
+  if (showSaldering && hasNegativeOn) {
     const noteP = document.createElement('p')
     noteP.className = 'saldering-negative-note'
     noteP.textContent = NEGATIVE_ON_NOTE_COPY // textContent — static copy
@@ -425,6 +445,7 @@ export function initComparisonTable(container: HTMLElement): () => void {
     const batteries = activeBatteries.value
     const computing = isComputing.value
     const error = computeError.value
+    const showSaldering = salderingOn.value
 
     // SIM-08: dim the stale table while computing
     const tableWrapper = container.querySelector('.table-scroll-wrapper')
@@ -464,7 +485,7 @@ export function initComparisonTable(container: HTMLElement): () => void {
     }
 
     // Render the full table (rebuilds on every signal change)
-    renderTable(container, results, batteries)
+    renderTable(container, results, batteries, showSaldering)
 
     // Re-apply stale class after table rebuild (renderTable clears innerHTML)
     const newWrapper = container.querySelector('.table-scroll-wrapper')
