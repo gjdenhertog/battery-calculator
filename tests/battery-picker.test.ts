@@ -6,12 +6,14 @@
  * Calls initBatteryPicker() against a real jsdom DOM seeded with the Phase 1 shell.
  *
  * Test coverage:
- *   (a) 7 catalog cards render on mount; custom cards added via add button
+ *   (a) 8 catalog cards render on mount; custom cards added via add button
  *   (b) Sessy 5 checkbox is checked on mount (BATT-03)
  *   (c) Checking 5 batteries disables remaining checkboxes + shows cap note (BATT-05)
  *   (d) XSS assertion: custom battery name via .textContent — no <script> elements
  *   (e) Custom card swatch: slot matches comparison table; hidden when no valid custom battery
  *   (f) Multiple custom batteries (D-01..D-05): add/remove/cap/name/reflow
+ *   (g) geschat badge renders on assumed spec rows; absent from cited rows + custom cards
+ *   (h) every catalog card has a Datasheet link (href=datasheetUrl, target=_blank, rel=noopener)
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderShell } from '../src/shell'
@@ -66,12 +68,12 @@ describe('initBatteryPicker DOM contract', () => {
 
   // ── (a) Card count ──────────────────────────────────────────────────────
 
-  it('renders 7 catalog battery cards', () => {
+  it('renders 8 catalog battery cards', () => {
     // All catalog cards have data-battery-id that does NOT start with "custom-"
     const catalogCards = Array.from(region.querySelectorAll('li.battery-card')).filter(
       (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-')
     )
-    expect(catalogCards).toHaveLength(BATTERY_CATALOG.length) // 7
+    expect(catalogCards).toHaveLength(BATTERY_CATALOG.length) // 8
   })
 
   it('renders 0 custom battery cards on mount (before add button click)', () => {
@@ -81,9 +83,9 @@ describe('initBatteryPicker DOM contract', () => {
     expect(customCards).toHaveLength(0)
   })
 
-  it('renders 7 total catalog <li> cards on mount', () => {
+  it('renders 8 total catalog <li> cards on mount', () => {
     const allCards = region.querySelectorAll('li.battery-card')
-    expect(allCards).toHaveLength(BATTERY_CATALOG.length) // 7
+    expect(allCards).toHaveLength(BATTERY_CATALOG.length) // 8
   })
 
   // ── (b) Sessy 5 pre-checked (BATT-03) ──────────────────────────────────
@@ -221,6 +223,97 @@ describe('initBatteryPicker DOM contract', () => {
     // Check that no child elements have a style attribute
     const allElements = pickerSection.querySelectorAll('[style]')
     expect(allElements.length).toBe(0)
+  })
+
+  // ── (g) geschat badge — assumed spec rows have badge; cited rows do not ───
+
+  it('victron-ess-10 card has geschat badges on all 4 assumed spec rows (dodFraction, roundTripEfficiency, maxChargeKw, maxDischargeKw)', () => {
+    // victron-ess-10 has assumedFields: ['dodFraction','roundTripEfficiency','maxChargeKw','maxDischargeKw']
+    const card = region.querySelector('[data-battery-id="victron-ess-10"]') as HTMLElement
+    expect(card).not.toBeNull()
+    const badges = card.querySelectorAll('.battery-card__badge')
+    expect(badges.length).toBe(4) // four assumed fields
+    for (const badge of badges) {
+      expect(badge.textContent).toBe('geschat')
+    }
+  })
+
+  it('victron-ess-10 Capaciteit dt does NOT have a geschat badge (cited field)', () => {
+    // nominalCapacityKwh is NOT in victron-ess-10 assumedFields
+    const card = region.querySelector('[data-battery-id="victron-ess-10"]') as HTMLElement
+    const dl = card.querySelector('dl.battery-card__specs') as HTMLElement
+    const dts = Array.from(dl.querySelectorAll('dt'))
+    const capaciteitDt = dts.find((dt) => dt.textContent?.includes('Capaciteit'))
+    expect(capaciteitDt).not.toBeUndefined()
+    const badgeInCapaciteit = capaciteitDt!.querySelector('.battery-card__badge')
+    expect(badgeInCapaciteit).toBeNull()
+  })
+
+  it('sessy-5 card (assumedFields []) renders ZERO geschat badges', () => {
+    const card = region.querySelector('[data-battery-id="sessy-5"]') as HTMLElement
+    expect(card).not.toBeNull()
+    const badges = card.querySelectorAll('.battery-card__badge')
+    expect(badges.length).toBe(0)
+  })
+
+  it('enphase-5p card has exactly one geschat badge (on Max laden)', () => {
+    // enphase-5p assumedFields: ['maxChargeKw']
+    const card = region.querySelector('[data-battery-id="enphase-5p"]') as HTMLElement
+    expect(card).not.toBeNull()
+    const badges = card.querySelectorAll('.battery-card__badge')
+    expect(badges.length).toBe(1)
+    expect(badges[0].textContent).toBe('geschat')
+    // The badge must be inside the dt for 'Max laden'
+    const dl = card.querySelector('dl.battery-card__specs') as HTMLElement
+    const dts = Array.from(dl.querySelectorAll('dt'))
+    const maxLadenDt = dts.find((dt) => dt.textContent?.includes('Max laden'))
+    expect(maxLadenDt).not.toBeUndefined()
+    const badge = maxLadenDt!.querySelector('.battery-card__badge')
+    expect(badge).not.toBeNull()
+    expect(badge!.textContent).toBe('geschat')
+  })
+
+  // ── (h) Datasheet link per catalog card ──────────────────────────────────
+
+  it('every catalog card has a .battery-card__datasheet link with correct href, target=_blank, rel containing noopener', () => {
+    const catalogCards = Array.from(region.querySelectorAll('li.battery-card')).filter(
+      (li) => !(li as HTMLElement).dataset.batteryId?.startsWith('custom-')
+    ) as HTMLElement[]
+    expect(catalogCards.length).toBe(BATTERY_CATALOG.length)
+
+    for (const card of catalogCards) {
+      const id = card.dataset.batteryId!
+      const battery = Array.from(BATTERY_CATALOG).find((b) => b.id === id)
+      expect(battery).not.toBeUndefined()
+
+      const link = card.querySelector('.battery-card__datasheet') as HTMLAnchorElement | null
+      expect(link).not.toBeNull()
+      expect(link!.getAttribute('href')).toBe(battery!.datasheetUrl)
+      expect(link!.getAttribute('target')).toBe('_blank')
+      const rel = link!.getAttribute('rel') ?? ''
+      expect(rel).toContain('noopener')
+      expect(rel).toContain('noreferrer')
+    }
+  })
+
+  it('datasheet link textContent is "📄 Datasheet" (no innerHTML)', () => {
+    const sessyCard = region.querySelector('[data-battery-id="sessy-5"]') as HTMLElement
+    const link = sessyCard.querySelector('.battery-card__datasheet') as HTMLAnchorElement
+    expect(link).not.toBeNull()
+    expect(link.textContent).toBe('📄 Datasheet')
+  })
+
+  it('picker subtree has 0 <script> elements after rendering badges + datasheet links', () => {
+    // Extends the existing XSS assertion to cover newly rendered DOM
+    const scripts = region.querySelectorAll('script')
+    expect(scripts.length).toBe(0)
+  })
+
+  it('no element in the picker section carries an inline style attribute (badge + link)', () => {
+    // Extends the no-inline-style test to cover badge and datasheet link nodes
+    const pickerSection = region.querySelector('section[aria-label="Batterijkeuze"]') as HTMLElement
+    const styledEls = pickerSection.querySelectorAll('[style]')
+    expect(styledEls.length).toBe(0)
   })
 
   // ── (e) Custom card swatch — slot matches table; hidden when no valid battery ────
