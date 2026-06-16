@@ -1,8 +1,18 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "The pages work, but there doesn't seemto be any styling, I also see two 404 errors (main.ts and favicon.ico)"
 created: 2026-06-08T00:00:00Z
-updated: 2026-06-08T00:00:00Z
+updated: 2026-06-16T00:00:00Z
+resolved: 2026-06-16T00:00:00Z
+resolution: |
+  Root cause (Pages serving the un-built repo-root source index.html instead of
+  the GitHub Actions artifact) is fixed: Pages source is now "GitHub Actions" and
+  the deploy job succeeds. Verified 2026-06-16 against the live site: the served
+  HTML references the BUILT hashed assets (/battery-calculator/assets/index-*.js
+  + .css) with ZERO /src/main.ts references, both assets return 200, and
+  favicon.svg returns 200 — so styling loads and both original 404s (main.ts,
+  favicon) are gone. The favicon was added and Pages-source requirement documented
+  by quick task 260608-jx7 (status: complete). Closed at v1.0 milestone close.
 ---
 
 ## Current Focus

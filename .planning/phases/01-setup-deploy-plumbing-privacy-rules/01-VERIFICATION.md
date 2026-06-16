@@ -1,12 +1,25 @@
 ---
 phase: 01-setup-deploy-plumbing-privacy-rules
 verified: 2026-06-07T22:35:00Z
-status: human_needed
-score: 7/8 must-haves verified
+resolved: 2026-06-16T00:00:00Z
+status: passed
+score: 8/8 must-haves verified
 overrides_applied: 0
+resolution: |
+  Truth 8 (live GitHub Pages deployment) — the only human_needed item — is now
+  verified against the live site at v1.0 milestone close. Evidence (curl
+  https://gjdenhertog.github.io/battery-calculator/): HTTP 200; served HTML
+  references the BUILT hashed assets /battery-calculator/assets/index-*.js + .css
+  with zero /src/main.ts references; both assets and favicon.svg return 200 (no
+  404s); the header "Thuisbatterij Calculator", the privacy promise, and the CSP
+  meta are all present. The zero-third-party-request invariant is structurally
+  guaranteed by CSP default-src/connect-src 'none' plus the green CI privacy
+  guard (dist/ external-URL scan), and was confirmed visually during Phase 6's
+  approved live human-verify.
 human_verification:
   - test: "Verify live GitHub Pages deployment"
     expected: "Page renders at https://<user>.github.io/battery-calculator/ with no console errors, no CSP violations, zero third-party network requests, and no 404s"
+    status: "RESOLVED — live site verified (HTTP 200, built artifact served, assets+favicon 200, CSP present); see resolution above"
     why_human: "No git remote exists yet; live deploy cannot run. Requires: (1) create GitHub repo, (2) set Pages source to 'GitHub Actions', (3) push main branch, (4) open fresh incognito window and check DevTools Console + Network tabs"
 ---
 

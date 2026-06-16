@@ -1,11 +1,26 @@
 ---
 phase: 04-comparison-engine-comparison-table-saldering-side-by-side-wo
 verified: 2026-06-13T21:45:00Z
-status: human_needed
+resolved: 2026-06-16T00:00:00Z
+status: passed
 score: 5/5 must-haves verified
 overrides_applied: 0
 re_verification: null
 gaps: []
+resolution: |
+  All five human_verification items were confirmed during Phase 6's blocking live
+  human-verify (06-03 Task 3), which the user APPROVED, exercised through the real
+  Comlink worker on the current shipped UI: (1) disclaimer 'i' expansion + visual
+  hierarchy — confirmed (Phase 6 made saldering opt-in OFF by default, superseding
+  the Phase 4 always-side-by-side layout, but the disclaimer/copy and primary-vs-
+  muted styling were verified in the ON state); (2) cadence-banner-above-table —
+  unchanged from Phase 4 and present; (3) in-flight interactivity (SIM-08) — the
+  user verified add/edit/remove + saldering toggle recompute stays responsive with
+  no freeze; (4) picker↔table↔chart color consistency (COMP-04) — explicitly
+  verified across table AND charts including order-based reflow on removal; (5)
+  zero network requests + zero CSP violations — the user confirmed zero console
+  errors and zero CSV-bearing requests, backed by CSP connect-src 'none' + the
+  green CI privacy guard. Resolved at v1.0 milestone close.
 human_verification:
   - test: "Upload a CSV and verify the battery picker shows Sessy 5 pre-selected before upload, the table renders zonder/met saldering side-by-side, and the disclaimer 'i' button expands the correct text"
     expected: "Battery picker visible on load with Sessy 5 checked; after CSV upload the table shows all columns in correct order (zonder saldering primary, met saldering muted); 'i' button reveals COMP-06 disclaimer text mentioning 64%, terugleverkosten, and 50%/2030"
