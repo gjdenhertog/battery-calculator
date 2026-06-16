@@ -211,6 +211,19 @@ export interface BatteryConfig {
   maxDischargeKw: number
   /** HTTPS URL to the product datasheet or spec page (BATT-01: cited in source) */
   datasheetUrl: string
+  /**
+   * Which of the five physics fields are [ASSUMED] v1 defaults rather than
+   * datasheet-cited figures (BATT-01).
+   *
+   * Omitted or empty array ⇒ all values are vendor-cited or user-provided
+   * (custom batteries always default to no assumed fields).
+   *
+   * Valid members: 'nominalCapacityKwh' | 'dodFraction' | 'roundTripEfficiency'
+   *                | 'maxChargeKw' | 'maxDischargeKw'
+   */
+  assumedFields?: ReadonlyArray<
+    'nominalCapacityKwh' | 'dodFraction' | 'roundTripEfficiency' | 'maxChargeKw' | 'maxDischargeKw'
+  >
 }
 
 /**
