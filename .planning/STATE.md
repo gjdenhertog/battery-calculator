@@ -5,7 +5,7 @@ milestone_name: MVP
 status: Awaiting next milestone
 stopped_at: v1.0 MVP shipped, deployed, and archived
 last_updated: "2026-06-16T14:57:57.584Z"
-last_activity: 2026-06-16 — Milestone v1.0 completed and archived
+last_activity: 2026-06-16 — Completed quick task 260616-w4s (catalog provenance UI + Enphase 5P)
 progress:
   total_phases: 6
   completed_phases: 6
@@ -102,6 +102,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260608-jx7 | Harden Phase 01 GitHub Pages deploy: add favicon, document required Pages source, bump artifact actions to Node 24 | 2026-06-08 | 9e4b395 | [260608-jx7-harden-phase-01-github-pages-deploy-add-](./quick/260608-jx7-harden-phase-01-github-pages-deploy-add-/) |
+| 260616-w4s | Battery catalog provenance UI ("geschat" badges + datasheet links) + Enphase IQ Battery 5P entry | 2026-06-16 | c62d3e7 | [260616-w4s-battery-catalog-provenance-ui-enphase-5p](./quick/260616-w4s-battery-catalog-provenance-ui-enphase-5p/) |
 
 ## Deferred Items
 
