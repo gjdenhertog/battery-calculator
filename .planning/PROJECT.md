@@ -20,18 +20,20 @@ The user uploads their own real CSV data and gets back a clear, honest compariso
 - [x] Merge multiple files; on overlapping timestamps the higher-resolution data point wins — validated Phase 2
 - [x] Default to the full period covered by the data; allow narrowing to a user-chosen sub-period — validated Phase 4 (period control, D-19 full-range default)
 - [x] Pick a battery from a curated catalog (default: Sessy 5 kWh) or provide a custom config — validated Phase 3 (catalog + `simulate`) + Phase 4 (spec-card picker, custom card)
+- [x] Add multiple custom batteries (not just one) within the max-5 cap, each with an optional name and order-based color — validated Phase 6 (multi-custom picker with deferred-commit button)
 - [x] Select multiple batteries to compare side-by-side in one run — validated Phase 4 (max-5 picker + `runComparison`)
-- [x] Compare saldering on/off — validated Phase 4 as side-by-side "zonder/met saldering" columns (D-01/COMP-02), not a re-computing toggle, so both scenarios are visible at once
+- [x] Compare saldering on/off — validated Phase 4 (side-by-side "zonder/met saldering" columns), refined in Phase 6 to an opt-in toggle that is OFF by default so the post-2027 "zonder saldering" reality is the headline and "met saldering" is revealed on demand
 - [x] Simulate, per battery, the energy stored during solar export and later self-consumed instead of imported — validated Phase 3 engine, surfaced in the Phase 4 UI
 - [x] Show a comparison table (self-consumption %, kWh shifted, residual grid import, residual feed-in) — validated Phase 4 (comparison table + per-row leader highlighting + marginal capture rate)
-- [x] Privacy promise: uploaded CSVs never leave the browser — validated Phase 1 CSP (`connect-src 'none'`) + Phase 4 Comlink worker (postMessage only); production re-confirm tracked in 04-HUMAN-UAT.md
+- [x] Show key charts (monthly self-consumption bars, a sample-week energy flow chart) — validated Phase 5 (uPlot charts) with a transparent-assumptions panel and "no euros" explainer
+- [x] Ship as static files on GitHub Pages; everything runs in the user's browser — validated Phase 1, live-verified at v1.0 close (https://gjdenhertog.github.io/battery-calculator/ serves the built artifact, HTTP 200, no 404s)
+- [x] Privacy promise: uploaded CSVs never leave the browser — validated Phase 1 CSP (`connect-src 'none'`) + Phase 4 Comlink worker (postMessage only) + CI dist/ privacy guard; confirmed in Phase 6's approved live human-verify
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Show key charts (e.g. monthly self-consumption bars, a sample-week energy flow chart) — Phase 5
-- [ ] Ship as static files hosted on GitHub Pages; everything runs in the user's browser — implemented Phase 1; live-deploy reachability pending human verification (01-HUMAN-UAT.md)
+_None — v1.0 MVP shipped 2026-06-16. Next-milestone scope not yet defined; run `/gsd:new-milestone`._
 
 ### Out of Scope
 
@@ -44,6 +46,19 @@ The user uploads their own real CSV data and gets back a clear, honest compariso
 - Year-by-year NL saldering phase-out schedule — v1 uses a simple on/off toggle; more nuanced modeling later
 - Full physical battery model (degradation curves, temperature effects, inverter losses) — out of scope for a consumer-grade sizing tool
 - Any server-side component, account system, or remote storage — explicit non-goal; everything runs client-side
+
+## Current State
+
+**Shipped: v1.0 MVP (2026-06-16)** — live at https://gjdenhertog.github.io/battery-calculator/
+
+- 6 phases, 27 plans, ~12,400 LOC TypeScript (src + tests), 423 tests green.
+- Stack: Vite 8 + TS 5.6, `@preact/signals-core`, papaparse, `@date-fns/tz`, uPlot, Comlink workers. Zero runtime network dependencies.
+- Fully client-side on GitHub Pages; maximal-lockdown CSP (`connect-src 'none'`), CI privacy guard scans `dist/` for external URLs, no error-reporting libs.
+- Known limitation: October DST fall-back parsing is only correct when the JS runtime TZ is Europe/Amsterdam (acceptable for the NL-only target; test suite pinned to that zone). Hardening is a follow-up if the app expands beyond NL.
+
+## Next Milestone Goals
+
+Not yet defined — run `/gsd:new-milestone` to scope v1.1+. Candidate directions parked in Out of Scope below: € savings / payback (needs tariffs), dynamic pricing, separate solar-CSV upload, year-by-year saldering phase-out modeling, additional NL CSV formats.
 
 ## Context
 
@@ -70,15 +85,17 @@ The user uploads their own real CSV data and gets back a clear, honest compariso
 |----------|-----------|---------|
 | Fully client-side, GitHub Pages hosting | Simplest deploy, zero infra cost, strongest privacy story | Implemented (Phase 1) — maximal-lockdown CSP (`connect-src 'none'`), CI `dist/` privacy guard, official Pages deploy chain; live-deploy reachability pending human verification |
 | Vanilla TypeScript + Vite (no framework) | Minimal deps, fast ship, easy maintenance for a single-purpose tool | Implemented (Phase 1) — Vite 8 + TS 5.6 scaffold, design-token CSS, 3-region shell, `tsc -b` typecheck + ESLint/Prettier/Vitest in CI |
-| Netherlands-only for v1 | Format detection, battery catalog, and saldering modeling all benefit from a tight regional focus | — Pending |
-| P1-derived solar (no separate solar CSV in v1) | Most NL P1 exports already include feed-in; defers a whole upload/parser pathway | — Pending |
-| Overlap resolution: higher-resolution data wins | P1 (15-min or finer) is more accurate than provider hourly exports; predictable default | — Pending |
-| Battery model includes power limits + efficiency + DoD | Capacity-only is misleading for sizing decisions; full physical model is overkill | — Pending |
-| Curated catalog of ~6–10 NL batteries + Custom | Balances "no decision paralysis" with "I have a different battery"; bundled JSON for offline use | — Pending |
-| Default battery = Sessy 5 kWh | NL-made, modular, sized for typical row-house consumption | — Pending |
-| Saldering modeled as on/off toggle (v1) | Captures the core "is a battery worth it post-saldering?" question without UI complexity | — Pending |
-| kWh-only outputs for v1, defer € to later milestone | Financial modeling needs tariff/dynamic-pricing input; cleaner to ship a solid energy model first | — Pending |
-| Output = comparison table + key charts | Numbers answer the decision; charts build intuition for why | — Pending |
+| Netherlands-only for v1 | Format detection, battery catalog, and saldering modeling all benefit from a tight regional focus | ✓ Good — held for all 6 phases; one consequence surfaced (DST fall-back parsing assumes Europe/Amsterdam runtime; test suite pinned accordingly) |
+| P1-derived solar (no separate solar CSV in v1) | Most NL P1 exports already include feed-in; defers a whole upload/parser pathway | ✓ Good (Phase 2) — feed-in parsed from P1; no separate solar path needed |
+| Overlap resolution: higher-resolution data wins | P1 (15-min or finer) is more accurate than provider hourly exports; predictable default | ✓ Good (Phase 2) — finer-wins `mergeFiles`, fixture-locked |
+| Battery model includes power limits + efficiency + DoD | Capacity-only is misleading for sizing decisions; full physical model is overkill | ✓ Good (Phase 3) — `simulate()` with sqrt(rte), DoD cap, power clamp; 16 hand-computed fixtures |
+| Curated catalog of ~6–10 NL batteries + Custom | Balances "no decision paralysis" with "I have a different battery"; bundled JSON for offline use | ✓ Good (Phase 3/4) — 7-entry catalog + custom; Phase 6 extended to multiple customs |
+| Default battery = Sessy 5 kWh | NL-made, modular, sized for typical row-house consumption | ✓ Good (Phase 3) — pre-checked default |
+| Saldering modeled as on/off toggle | Captures the core "is a battery worth it post-saldering?" question without UI complexity | ✓ Good — Phase 4 shipped side-by-side columns; Phase 6 refined to opt-in OFF-by-default toggle (post-2027 headline) |
+| kWh-only outputs for v1, defer € to later milestone | Financial modeling needs tariff/dynamic-pricing input; cleaner to ship a solid energy model first | ✓ Good — honest kWh-only framing held; "no euros" explainer added (Phase 5) |
+| Output = comparison table + key charts | Numbers answer the decision; charts build intuition for why | ✓ Good (Phase 4/5) — comparison table + uPlot monthly-bars + flow chart |
+| Defer custom-battery recompute to an explicit commit button (Phase 6) | Per-keystroke recompute through the Comlink worker was slow with multiple customs | ✓ Good — "Toevoegen aan vergelijking" button; one recompute per commit |
+| Pin test timezone to Europe/Amsterdam | NL-only app; DST fall-back parsing leaks the runtime TZ, and CI runs UTC | ⚠️ Revisit — masks a latent non-Amsterdam DST edge case; harden the parser if the app goes multi-region |
 
 ## Evolution
 
@@ -98,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 after Phase 4 (Comparison Engine, Comparison Table, Saldering Side-by-Side, Worker Wiring, State) complete — the differentiator now ships as a live UI on the proven core. Reactive signal state (@preact/signals-core), Comlink simulation Web Worker (off-main-thread `runComparison`), a battery spec-card picker (Sessy 5 default, max 5 + custom), a period-narrowing control (full-range default, no /jaar /maand extrapolation), and a comparison table with "zonder/met saldering" side-by-side columns, per-row leader highlighting, marginal capture rate, and a "Rekenen…" interactivity indicator. Verified 5/5 success criteria + 11/11 requirements (SIM-07/08, COMP-01..08, DATA-12); 290 Vitest tests green; production build emits the worker chunk. A render-race crash on multi-battery select was caught at the human-verify checkpoint and fixed; code review found 3 Critical + 4 Warning issues, all fixed (CR-01 stranded isComputing, CR-02 batch ordering, CR-03 status-node cleanup, dispose leaks, 6th swatch, zero-value coloring). Post-fix browser re-confirmation tracked in 04-HUMAN-UAT.md (accepted on regression-test strength). Phase 1 live-deploy reachability still pending human verification (01-HUMAN-UAT.md). Next: Phase 5 — charts, transparent-assumptions UI, Dutch copy pass, honest terminology audit.*
+*Last updated: 2026-06-16 after v1.0 MVP milestone — all 6 phases shipped and deployed live to GitHub Pages. A fully client-side NL home-battery calculator: upload P1/energy CSVs, pick catalog and/or multiple custom batteries, get an honest side-by-side kWh-avoided comparison with charts and transparent assumptions — no data leaves the browser. ~12,400 LOC TS, 423 tests, maximal-lockdown CSP + CI privacy guard. Phase 6 added multiple custom batteries and an opt-in (OFF-by-default) saldering toggle. All v1.0 requirements validated; all pre-close UAT/verification/debug artifacts resolved with evidence (live-deploy verified, Phase 4 behaviors confirmed in Phase 6's approved live human-verify). One known limitation: DST fall-back parsing assumes the Europe/Amsterdam runtime (NL-only). Next: run `/gsd:new-milestone` to scope v1.1+.*

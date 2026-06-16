@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: Phase 6 shipped & deployed — origin/main live at gjdenhertog.github.io/battery-calculator (CI green)
-stopped_at: Phase 6 context gathered
-last_updated: "2026-06-15T20:25:14.609Z"
-last_activity: 2026-06-15
+milestone_name: MVP
+status: Awaiting next milestone
+stopped_at: v1.0 MVP shipped, deployed, and archived
+last_updated: "2026-06-16T14:57:57.584Z"
+last_activity: 2026-06-16 — Milestone v1.0 completed and archived
 progress:
   total_phases: 6
   completed_phases: 6
@@ -25,12 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 
 ## Current Position
 
-Phase: 06 — COMPLETE
-Plan: 1 of 3
-Status: Phase 6 shipped & deployed — origin/main live at gjdenhertog.github.io/battery-calculator (CI green)
-Last activity: 2026-06-15
-
-Progress: [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-16 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -118,3 +116,7 @@ Items acknowledged and carried forward from previous milestone close:
 Last session: 2026-06-15T09:10:14.502Z
 Stopped at: Phase 6 context gathered
 Resume file: .planning/phases/06-post-v1-ux-enhancements-multiple-custom-batteries-and-option/06-CONTEXT.md
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
