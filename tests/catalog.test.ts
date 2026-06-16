@@ -17,6 +17,15 @@ import { describe, it, expect } from 'vitest'
 import { BATTERY_CATALOG } from '../src/domain/battery-catalog'
 import type { BatteryConfig } from '../src/domain/types'
 
+/** Valid spec-field keys that may appear in assumedFields */
+const VALID_ASSUMED_KEYS = new Set<string>([
+  'nominalCapacityKwh',
+  'dodFraction',
+  'roundTripEfficiency',
+  'maxChargeKw',
+  'maxDischargeKw',
+])
+
 describe('BATTERY_CATALOG', () => {
   it('ships between 6 and 8 entries with Sessy 5 kWh first (BATT-03)', () => {
     expect(BATTERY_CATALOG.length).toBeGreaterThanOrEqual(6)
@@ -59,5 +68,47 @@ describe('BATTERY_CATALOG', () => {
       expect(b.id.length).toBeGreaterThan(0)
       expect(b.name.length).toBeGreaterThan(0)
     }
+  })
+
+  // ── assumedFields shape lock (BATT-01 provenance) ──────────────────────────
+
+  it('every entry with assumedFields has only valid spec-field keys (shape lock)', () => {
+    for (const b of BATTERY_CATALOG as BatteryConfig[]) {
+      if (b.assumedFields !== undefined) {
+        expect(Array.isArray(b.assumedFields)).toBe(true)
+        for (const key of b.assumedFields) {
+          expect(VALID_ASSUMED_KEYS.has(key)).toBe(true)
+        }
+      }
+    }
+  })
+
+  // ── Enphase IQ Battery 5P entry (datasheet-verified specs) ─────────────────
+
+  it('enphase-5p entry exists with name "Enphase IQ Battery 5P"', () => {
+    const entry = (BATTERY_CATALOG as BatteryConfig[]).find((b) => b.id === 'enphase-5p')
+    expect(entry).toBeDefined()
+    expect(entry!.name).toBe('Enphase IQ Battery 5P')
+  })
+
+  it('enphase-5p has datasheet-verified specs (DSH-00857-1.0)', () => {
+    const entry = (BATTERY_CATALOG as BatteryConfig[]).find((b) => b.id === 'enphase-5p')
+    expect(entry).toBeDefined()
+    expect(entry!.nominalCapacityKwh).toBe(5.0)
+    expect(entry!.dodFraction).toBe(1.0)
+    expect(entry!.roundTripEfficiency).toBe(0.9)
+    expect(entry!.maxChargeKw).toBe(3.2)
+    expect(entry!.maxDischargeKw).toBe(3.2)
+    expect(entry!.datasheetUrl).toBe('https://enphase.com/en-gb/download/iq-battery-5p-data-sheet')
+  })
+
+  it("enphase-5p assumedFields deep-equals ['maxChargeKw']", () => {
+    const entry = (BATTERY_CATALOG as BatteryConfig[]).find((b) => b.id === 'enphase-5p')
+    expect(entry).toBeDefined()
+    expect(entry!.assumedFields).toEqual(['maxChargeKw'])
+  })
+
+  it('catalog now ships exactly 8 entries', () => {
+    expect(BATTERY_CATALOG.length).toBe(8)
   })
 })

@@ -38,10 +38,20 @@ const _disposeFns: Array<() => void> = []
 /**
  * Append a dt+dd pair to a dl element.
  * value is always set via textContent — XSS safe.
+ * When isAssumed is true, a "geschat" badge is appended to the dt.
  */
-function appendSpec(dl: HTMLElement, label: string, value: string): void {
+function appendSpec(dl: HTMLElement, label: string, value: string, isAssumed = false): void {
   const dt = document.createElement('dt')
   dt.textContent = label // textContent — XSS safe; static label string
+
+  if (isAssumed) {
+    const badge = document.createElement('span')
+    badge.className = 'battery-card__badge'
+    badge.textContent = 'geschat' // textContent — XSS safe; static Dutch string
+    badge.title = 'geschatte waarde' // hover/screen-reader context
+    badge.setAttribute('aria-label', 'geschatte waarde')
+    dt.appendChild(badge)
+  }
 
   const dd = document.createElement('dd')
   dd.textContent = value // textContent — XSS safe; formatted number string
@@ -100,6 +110,9 @@ function buildSpecCard(
   label.appendChild(name)
   li.appendChild(label)
 
+  // Compute the set of assumed fields once (empty set for custom batteries / no assumedFields)
+  const assumed = new Set(battery.assumedFields ?? [])
+
   // Spec rows (D-05)
   const dl = document.createElement('dl')
   dl.className = 'battery-card__specs'
@@ -107,22 +120,48 @@ function buildSpecCard(
   appendSpec(
     dl,
     'Capaciteit',
-    `${battery.nominalCapacityKwh.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`
+    `${battery.nominalCapacityKwh.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`,
+    assumed.has('nominalCapacityKwh')
   )
-  appendSpec(dl, 'Bruikbaar', `${Math.round(battery.dodFraction * 100)} %`)
-  appendSpec(dl, 'Rendement', `${Math.round(battery.roundTripEfficiency * 100)} %`)
+  appendSpec(
+    dl,
+    'Bruikbaar',
+    `${Math.round(battery.dodFraction * 100)} %`,
+    assumed.has('dodFraction')
+  )
+  appendSpec(
+    dl,
+    'Rendement',
+    `${Math.round(battery.roundTripEfficiency * 100)} %`,
+    assumed.has('roundTripEfficiency')
+  )
   appendSpec(
     dl,
     'Max laden',
-    `${battery.maxChargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`
+    `${battery.maxChargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`,
+    assumed.has('maxChargeKw')
   )
   appendSpec(
     dl,
     'Max ontladen',
-    `${battery.maxDischargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`
+    `${battery.maxDischargeKw.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW`,
+    assumed.has('maxDischargeKw')
   )
 
   li.appendChild(dl)
+
+  // Datasheet link — createElement + setAttribute only (XSS/CSP safe; NO innerHTML)
+  // This is a user-initiated navigation (target=_blank), not an auto-fetch.
+  // It does not violate connect-src 'none' and does not appear in static index.html.
+  const datasheetLink = document.createElement('a')
+  datasheetLink.setAttribute('href', battery.datasheetUrl)
+  datasheetLink.setAttribute('target', '_blank')
+  datasheetLink.setAttribute('rel', 'noopener noreferrer')
+  datasheetLink.className = 'battery-card__datasheet'
+  datasheetLink.textContent = '📄 Datasheet' // textContent — XSS safe; static string
+
+  li.appendChild(datasheetLink)
+
   return li
 }
 
